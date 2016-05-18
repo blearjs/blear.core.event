@@ -8,246 +8,421 @@
 'use strict';
 
 var doc = window.document;
-var selector = require('../src/index.js');
+var event = require('../src/index.js');
+var selector = require('blear.core.selector');
 
 describe('测试文件', function () {
-    it('.query', function () {
-        var oDiv = doc.createElement('div');
-        oDiv.setAttribute('id', 'slide1');
+    it('.on:3', function (done) {
+        var divEl = doc.createElement('div');
+        doc.body.appendChild(divEl);
 
-        oDiv.innerHTML = '<p>1</p><p>2</p><p>3</p>';
-
-        doc.body.appendChild(oDiv);
-        //selector:ele,context:ele
-        var selEle1 = selector.query(oDiv, doc);
-        //expect(selEle1[0]).toEqual(oDiv);
-        //
-        ////selector:string,context:ele
-        //var selEle2 = selector.query('p','#slide1');
-        //console.log(selEle2)
-        //expect(selEle2.length).toEqual(3);
-        //for(var i=0;i<selEle2.length;i++){
-        //    expect(selEle2[i]).toEqual(oDiv.childNodes[i]);
-        //}
-        //
-        ////selector:string,context:ele
-        //var selEle3 = selector.query('p',oDiv);
-        //expect(selEle3.length).toEqual(3);
-        //for(var i=0;i<selEle3.length;i++){
-        //    expect(selEle3[i]).toEqual(oDiv.childNodes[i]);
-        //}
-
-        doc.body.removeChild(oDiv);
-    });
-
-    it('.contains', function () {
-        var oDiv1 = doc.createElement('div');
-        var oDiv2 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv2.setAttribute('id', 'slide2');
-        oDiv1.appendChild(oDiv2);
-        doc.body.appendChild(oDiv1);
-        //parent:oDiv1
-        expect(selector.contains(oDiv2, oDiv1)).toEqual(true);
-
-        //parent:doc
-        expect(selector.contains(oDiv1, doc)).toEqual(true);
-
-        doc.body.removeChild(oDiv1);
-    });
-
-    it('.siblings', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv1.innerHTML = '<p>1</p><p>2</p><p>3</p>';
-        doc.body.appendChild(oDiv1);
-        var p1 = selector.query('p', oDiv1)[0];
-        var sib = selector.siblings(p1);
-
-        expect(sib[1].innerHTML).toEqual('3');
-        expect(selector.siblings().length).toEqual(0);
-
-        doc.body.removeChild(oDiv1);
-    });
-
-    it('.index', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv1.innerHTML = '<p>1</p><p id="p2">2</p><p>3</p>';
-        doc.body.appendChild(oDiv1);
-        var p2 = selector.query('#p2', oDiv1)[0];
-        var idx2 = selector.index(p2);
-
-        expect(idx2).toEqual(1);
-        expect(selector.index()).toEqual(-1);
-
-        doc.body.removeChild(oDiv1);
-
-    });
-
-    it('.prev', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv1.innerHTML = '<p>1</p><p id="p2">2</p><p>3</p>';
-        doc.body.appendChild(oDiv1);
-        var p2 = selector.query('#p2', oDiv1)[0];
-        var p1 = selector.prev(p2)[0];
-
-        expect(p1.innerHTML).toEqual('1');
-        expect(selector.prev().length).toEqual(0);
-
-        doc.body.removeChild(oDiv1);
-    });
-
-    it('.next', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv1.innerHTML = '<p>1</p><p id="p2">2</p><p>3</p>';
-        doc.body.appendChild(oDiv1);
-        var p2 = selector.query('#p2', oDiv1)[0];
-        var p1 = selector.next(p2)[0];
-
-        expect(p1.innerHTML).toEqual('3');
-        expect(selector.next().length).toEqual(0);
-
-        doc.body.removeChild(oDiv1);
-    });
-
-    it('.prevAll', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv1.innerHTML = '<p>0</p><p>1</p><p id="p2">2</p><p>3</p>';
-        doc.body.appendChild(oDiv1);
-        var p2 = selector.query('#p2', oDiv1)[0];
-        var p2PrevAll = selector.prevAll(p2);
-
-        expect(p2PrevAll[1].innerHTML).toEqual('1');
-        expect(selector.prevAll().length).toEqual(0);
-
-        doc.body.removeChild(oDiv1);
-    });
-
-    it('.nextAll', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv1.innerHTML = '<p>0</p><p>1</p><p id="p2">2</p><p>3</p><p>4</p>';
-        doc.body.appendChild(oDiv1);
-        var p2 = selector.query('#p2', oDiv1)[0];
-        var p2NextAll = selector.nextAll(p2);
-
-        expect(p2NextAll[1].innerHTML).toEqual('3');
-        expect(selector.nextAll().length).toEqual(0);
-
-        doc.body.removeChild(oDiv1);
-    });
-
-    it('.closest', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-
-        var oDiv2 = doc.createElement('div');
-        oDiv2.setAttribute('id', 'slide2');
-
-        oDiv1.innerHTML = '<p>0</p><p>1</p><p id="p2">2</p><p>3</p><p>4</p>';
-        doc.body.appendChild(oDiv1);
-        doc.body.appendChild(oDiv2);
-
-        var p2 = selector.query('#p2', oDiv1)[0];
-        var p2Parent_ele = selector.closest(p2, oDiv1);
-        var p2Parent_str = selector.closest(p2, '#slide1');
-        var p2Parent_empty = selector.closest(p2, '#slide2');
-
-        expect(p2Parent_ele[0]).toEqual(oDiv1);
-        expect(p2Parent_str[0]).toEqual(oDiv1);
-        expect(p2Parent_empty.length).toEqual(0);
-        expect(selector.closest().length).toEqual(0);
-
-        doc.body.removeChild(oDiv1);
-    });
-
-    it('.parent', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv1.innerHTML = '<p>0</p><p>1</p><p id="p2">2</p><p>3</p><p>4</p>';
-        doc.body.appendChild(oDiv1);
-        var p2 = selector.query('#p2', oDiv1)[0];
-        var p2Parent = selector.parent(p2, oDiv1);
-
-        expect(p2Parent[0]).toEqual(oDiv1);
-        expect(selector.parent().length).toEqual(0);
-
-        doc.body.removeChild(oDiv1);
-
-    });
-
-    it('.children', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv1.innerHTML = '<p>0</p><p>1</p><p id="p2">2</p><p>3</p><p>4</p>';
-        doc.body.appendChild(oDiv1);
-        var childs = selector.children(oDiv1);
-
-        expect(childs[0].innerHTML).toEqual('0');
-        expect(selector.children().length).toEqual(0);
-
-        doc.body.removeChild(oDiv1);
-
-    });
-
-    it('.contents', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv1.innerHTML = '<p>0</p><p>1</p><p id="p2">2</p><p>3</p><p>4</p>';
-        doc.body.appendChild(oDiv1);
-        var contents = selector.contents(oDiv1);
-
-        expect(contents[0].innerHTML).toEqual('0');
-        expect(selector.contents().length).toEqual(0);
-
-        doc.body.removeChild(oDiv1);
-
-    });
-
-    it('.isMatched', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        doc.body.appendChild(oDiv1);
-        var isMatched = selector.isMatched(oDiv1,'#slide1');
-
-        expect(isMatched).toEqual(true);
-
-        doc.body.removeChild(oDiv1);
-
-    });
-
-    it('.filter', function () {
-        var oDiv1 = doc.createElement('div');
-        oDiv1.setAttribute('id', 'slide1');
-        oDiv1.innerHTML = '<p>0</p><p>1</p><p id="p2">2</p><p>3</p><p>4</p>';
-        doc.body.appendChild(oDiv1);
-        var list = selector.query('p', oDiv1);
-        var fliterP2 = selector.filter(list, function () {
-            return this.innerHTML !== '2'
+        event.on(divEl, 'click', function (ev) {
+            expect(ev.type).toEqual('click');
+            doc.body.removeChild(divEl);
+            done();
         });
 
-        expect(fliterP2[2].innerHTML).toEqual('3');
-
-        doc.body.removeChild(oDiv1);
-
+        event.emit(divEl, 'click');
     });
 
-    // it('.has', function () {
-    //     var oDiv1 = doc.createElement('div');
-    //     oDiv1.setAttribute('id', 'slide1');
-    //     oDiv1.innerHTML = '<p>0</p><p>1</p><p id="p2">2</p><p>3</p><p>4</p>';
-    //     doc.body.appendChild(oDiv1);
-    //     var p1 = selector.query('p', oDiv1)[1];
-    //
-    //     expect(selector.has(p1, oDiv1)).toEqual(true);
-    //     expect(selector.has(p1, '#slide1')).toEqual(true);
-    //     expect(selector.has(p1,p1)).toEqual(true);
-    //
-    //     doc.body.removeChild(oDiv1);
-    //
-    // });
+    it('.on:4', function (done) {
+        var divEl = doc.createElement('div');
+
+        divEl.innerHTML = '' +
+            '<ul>' +
+            /**/'<li>' +
+            /**//**/'<p>' +
+            /**//**//**/'<button>click me</button>' +
+            /**//**/'</p>' +
+            /**/'</li>' +
+            '</ul>';
+        doc.body.appendChild(divEl);
+        var btnEl = divEl.getElementsByTagName('button')[0];
+
+        event.on(divEl, 'click', 'p', function (ev) {
+            expect(this.tagName).toEqual('P');
+            expect(ev.type).toEqual('click');
+            doc.body.removeChild(divEl);
+            done();
+        });
+
+        event.emit(btnEl, 'click');
+    });
+
+    it('.on:3/.un:1', function (done) {
+        var divEl = doc.createElement('div');
+
+        doc.body.appendChild(divEl);
+
+        var times1 = 0;
+        var times2 = 0;
+        var times3 = 0;
+        var fn1 = function () {
+            times1++;
+        };
+        var fn2 = function () {
+            times2++;
+        };
+        var fn3 = function () {
+            times3++;
+        };
+
+        event.on(divEl, 'click', fn1);
+        event.on(divEl, 'click', fn2);
+        event.on(divEl, 'click', fn3);
+
+        event.emit(divEl, 'click');
+        event.un(divEl);
+        event.emit(divEl, 'click');
+
+        expect(times1).toEqual(1);
+        expect(times2).toEqual(1);
+        expect(times3).toEqual(1);
+        doc.body.removeChild(divEl);
+        done();
+    });
+
+    it('.on:3/.un:2', function (done) {
+        var divEl = doc.createElement('div');
+
+        doc.body.appendChild(divEl);
+
+        var times1 = 0;
+        var times2 = 0;
+        var times3 = 0;
+        var fn1 = function () {
+            times1++;
+        };
+        var fn2 = function () {
+            times2++;
+        };
+        var fn3 = function () {
+            times3++;
+        };
+
+        event.on(divEl, 'click', fn1);
+        event.on(divEl, 'click', fn2);
+        event.on(divEl, 'click', fn3);
+
+        event.emit(divEl, 'click');
+        event.un(divEl, 'click');
+        event.emit(divEl, 'click');
+
+        expect(times1).toEqual(1);
+        expect(times2).toEqual(1);
+        expect(times3).toEqual(1);
+        doc.body.removeChild(divEl);
+        done();
+    });
+
+    it('.on:3/.un:3', function (done) {
+        var divEl = doc.createElement('div');
+
+        doc.body.appendChild(divEl);
+
+        var times1 = 0;
+        var times2 = 0;
+        var times3 = 0;
+        var fn1 = function () {
+            times1++;
+        };
+        var fn2 = function () {
+            times2++;
+        };
+        var fn3 = function () {
+            times3++;
+        };
+
+        event.on(divEl, 'click', fn1);
+        event.on(divEl, 'click', fn2);
+        event.on(divEl, 'click', fn3);
+
+        event.emit(divEl, 'click');
+        event.un(divEl, 'click', fn2);
+        event.emit(divEl, 'click');
+
+        setTimeout(function () {
+            expect(times1).toEqual(2);
+            expect(times2).toEqual(1);
+            expect(times3).toEqual(2);
+            doc.body.removeChild(divEl);
+            done();
+        }, 100);
+    });
+
+    it('.on:4/.un:1', function (done) {
+        var divEl = doc.createElement('div');
+        var pEl = doc.createElement('p');
+
+        divEl.appendChild(pEl);
+        doc.body.appendChild(divEl);
+
+        var times1 = 0;
+        var times2 = 0;
+        var times3 = 0;
+        var fn1 = function () {
+            times1++;
+        };
+        var fn2 = function () {
+            times2++;
+        };
+        var fn3 = function () {
+            times3++;
+        };
+
+        event.on(divEl, 'click', 'p', fn1);
+        event.on(divEl, 'click', 'p', fn2);
+        event.on(divEl, 'click', 'p', fn3);
+
+        event.emit(pEl, 'click');
+        event.un(divEl);
+        event.emit(pEl, 'click');
+
+        setTimeout(function () {
+            expect(times1).toEqual(1);
+            expect(times2).toEqual(1);
+            expect(times3).toEqual(1);
+            doc.body.removeChild(divEl);
+            done();
+        }, 100);
+    });
+
+
+    it('.on:4/.un:2', function (done) {
+        var divEl = doc.createElement('div');
+        var pEl = doc.createElement('p');
+
+        divEl.appendChild(pEl);
+        doc.body.appendChild(divEl);
+
+        var times1 = 0;
+        var times2 = 0;
+        var times3 = 0;
+        var fn1 = function () {
+            times1++;
+        };
+        var fn2 = function () {
+            times2++;
+        };
+        var fn3 = function () {
+            times3++;
+        };
+
+        event.on(divEl, 'click', 'p', fn1);
+        event.on(divEl, 'click', 'p', fn2);
+        event.on(divEl, 'click', 'p', fn3);
+
+        event.emit(pEl, 'click');
+        event.un(divEl, 'click');
+        event.emit(pEl, 'click');
+
+        setTimeout(function () {
+            expect(times1).toEqual(1);
+            expect(times2).toEqual(1);
+            expect(times3).toEqual(1);
+            doc.body.removeChild(divEl);
+            done();
+        }, 100);
+    });
+
+    it('.on:4/.un:3', function (done) {
+        var divEl = doc.createElement('div');
+        var pEl = doc.createElement('p');
+
+        divEl.appendChild(pEl);
+        doc.body.appendChild(divEl);
+
+        var times1 = 0;
+        var times2 = 0;
+        var times3 = 0;
+        var fn1 = function () {
+            times1++;
+        };
+        var fn2 = function () {
+            times2++;
+        };
+        var fn3 = function () {
+            times3++;
+        };
+
+        event.on(divEl, 'click', 'p', fn1);
+        event.on(divEl, 'click', 'p', fn2);
+        event.on(divEl, 'click', 'p', fn3);
+
+        event.emit(pEl, 'click');
+        event.un(divEl, 'click', fn2);
+        event.emit(pEl, 'click');
+
+        setTimeout(function () {
+            expect(times1).toEqual(2);
+            expect(times2).toEqual(1);
+            expect(times3).toEqual(2);
+            doc.body.removeChild(divEl);
+            done();
+        }, 100);
+    });
+
+    it('.length', function (done) {
+        var divEl1 = doc.createElement('div');
+        var divEl2 = doc.createElement('div');
+
+        doc.body.appendChild(divEl1);
+        doc.body.appendChild(divEl2);
+
+        var times1 = 0;
+        var times2 = 0;
+        var times3 = 0;
+        var fn1 = function () {
+            times1++;
+        };
+        var fn2 = function () {
+            times2++;
+        };
+        var fn3 = function () {
+            times3++;
+        };
+
+        event.on(divEl1, 'click', fn1);
+        event.on(divEl1, 'click', fn2);
+        event.on(divEl1, 'click', fn3);
+
+        event.un(divEl1, 'click', fn2);
+
+        expect(event.length(divEl1, 'click')).toEqual(2);
+        expect(event.length(divEl2, 'click')).toEqual(0);
+        doc.body.removeChild(divEl1);
+        doc.body.removeChild(divEl2);
+        done();
+    });
+
+    it('.once', function (done) {
+        var divEl = doc.createElement('div');
+        divEl.innerHTML = '<p>1</p>';
+        doc.body.appendChild(divEl);
+        var pEl = selector.query('p', divEl)[0];
+
+        var times1 = 0;
+        var fn1 = function () {
+            times1++;
+        };
+
+        event.once(divEl, 'click', fn1);
+        event.emit(divEl, 'click');
+        expect(times1).toEqual(1);
+
+        event.emit(divEl, 'click');
+        expect(times1).toEqual(1);
+
+        event.once(divEl, 'click', 'p', fn1);
+        event.emit(pEl, 'click');
+        expect(times1).toEqual(2);
+
+        event.emit(pEl, 'click');
+        expect(times1).toEqual(2);
+
+        doc.body.removeChild(divEl);
+        done();
+    });
+
+    it('.once/.un:2', function (done) {
+        var divEl = doc.createElement('div');
+        doc.body.appendChild(divEl);
+        var times = 0;
+        event.once(divEl, 'click', function () {
+            times++;
+        });
+
+        event.un(divEl, 'click');
+        event.emit(divEl, 'click');
+
+        setTimeout(function () {
+            expect(times).toEqual(0);
+            doc.body.removeChild(divEl);
+            done();
+        }, 100);
+    });
+
+    it('.once/.un:3', function (done) {
+        var divEl = doc.createElement('div');
+        doc.body.appendChild(divEl);
+        var time1s = 0;
+        var time2s = 0;
+        var fn1 =function () {
+            time1s++;
+        };
+        var fn2 =function () {
+            time2s++;
+        };
+
+        event.once(divEl, 'click', fn1);
+        event.once(divEl, 'click', fn2);
+        event.un(divEl, 'click', fn1);
+        event.emit(divEl, 'click');
+
+        setTimeout(function () {
+            expect(time1s).toEqual(0);
+            expect(time2s).toEqual(1);
+            doc.body.removeChild(divEl);
+            done();
+        }, 100);
+    });
+
+    it('bind multiple eventType in same dom', function (done) {
+        var divEl = doc.createElement('div');
+        doc.body.appendChild(divEl);
+        var click1Times = 0;
+        var click2Times = 0;
+        var mouseover1Times = 0;
+        var mouseover2Times = 0;
+
+        event.on(divEl, 'click', function () {
+            click1Times++;
+        });
+        event.on(divEl, 'click', function () {
+            click2Times++;
+        });
+        event.on(divEl, 'mouseover', function () {
+            mouseover1Times++;
+        });
+        event.on(divEl, 'mouseover', function () {
+            mouseover2Times++;
+        });
+
+        event.un(divEl, 'click');
+        event.un(divEl, 'mouseover');
+        event.emit(divEl, 'click');
+        event.emit(divEl, 'click');
+        event.emit(divEl, 'mouseover');
+        event.emit(divEl, 'mouseover');
+
+        setTimeout(function () {
+            expect(click1Times).toEqual(0);
+            expect(click2Times).toEqual(0);
+            expect(mouseover1Times).toEqual(0);
+            expect(mouseover2Times).toEqual(0);
+            doc.body.removeChild(divEl);
+            done();
+        }, 100);
+    });
+
+    it('remove empty on', function (done) {
+        var divEl = doc.createElement('div');
+        doc.body.appendChild(divEl);
+        var fn = function () {
+
+        };
+        var called = false;
+
+        try {
+            event.un(divEl);
+            event.un(divEl, 'click');
+            event.un(divEl, 'click', fn);
+        } catch (err) {
+            called = true;
+        }
+
+        expect(called).toEqual(false);
+        doc.body.removeChild(divEl);
+        done();
+    });
 });
