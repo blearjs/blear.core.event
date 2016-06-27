@@ -45,6 +45,7 @@
     "blear.core.selector": "1.x"
   },
   "devDependencies": {
+    "coolie.js": "^2.0.19",
     "jasmine-core": "^2.4.1",
     "karma": "^0.13.22",
     "karma-chrome-launcher": "^1.0.1",

@@ -27,16 +27,20 @@
 
 'use strict';
 
- require('blear.polyfills.event');
+require('blear.polyfills.event');
 
 var access = require('blear.utils.access');
 var typeis = require('blear.utils.typeis');
 var object = require('blear.utils.object');
-var array =  require('blear.utils.array');
+var array = require('blear.utils.array');
 var selector = require('blear.core.selector');
 
 
 var w3c = !!window.FormData;
+var specialEvents = {};
+var standardHandle = function (ev, callback) {
+    return callback.call(this, ev);
+};
 
 /**
  * 设置 DOM 标记
@@ -319,21 +323,29 @@ var on = function (once, el, eventType, sel, listener) {
     if (typeis.Function(args[3])) {
         listener = args[3];
         eachEventTypes(eventType, function (index, _eventType) {
+            var specialEvent = specialEvents[_eventType];
+            // var displayEvent = specialEvent ? specialEvent.d : _eventType;
+            var listenEvent = specialEvent ? specialEvent.l : _eventType;
+            var handle = specialEvent ? specialEvent.h : standardHandle;
             var proxyId = getListenerProxyId(el, _eventType, listener);
             var proxy = function (ev) {
-                if (once) {
-                    removeElementEventTypeListener(el, _eventType, listener);
-                }
+                handle.call(this, ev, function (ev) {
+                    var targetEl = this;
 
-                if (listener.call(this, ev) === false) {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    ev.stopImmediatePropagation();
-                }
+                    if (once) {
+                        removeElementEventTypeListener(el, _eventType, listener);
+                    }
+
+                    if (listener.call(targetEl, ev) === false) {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        ev.stopImmediatePropagation();
+                    }
+                });
             };
 
             listener[proxyId] = proxy;
-            manageEvent(el, _eventType, proxy);
+            manageEvent(el, listenEvent, proxy);
         });
     }
     // delegate
@@ -341,26 +353,37 @@ var on = function (once, el, eventType, sel, listener) {
     else if (typeis.Function(args[4])) {
         listener = args[4];
         eachEventTypes(eventType, function (index, _eventType) {
+            var specialEvent = specialEvents[_eventType];
+            // var displayEvent = specialEvent ? specialEvent.d : _eventType;
+            var listenEvent = specialEvent ? specialEvent.l : _eventType;
+            var handle = specialEvent ? specialEvent.h : standardHandle;
             var proxyId = getListenerProxyId(el, _eventType, listener);
             var proxy = function (ev) {
                 // 查找当前 target 到 selector 的节点
                 var closestEl = selector.closest(ev.target, sel)[0];
 
-                // 如果事件类型相同 && 最近节点存在 && 父子关系
-                if (_eventType === ev.type && closestEl && selector.contains(closestEl, el)) {
-                    if (once) {
-                        removeElementEventTypeListener(el, _eventType, listener);
-                    }
-
-                    if (listener.call(closestEl, ev) === false) {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                        ev.stopImmediatePropagation();
-                    }
+                if (!closestEl) {
+                    return;
                 }
+
+                handle.call(closestEl, ev, function (ev) {
+                    var targetEl = this;
+                    // 如果事件类型相同 && 最近节点存在 && 父子关系
+                    if (_eventType === ev.type && targetEl && selector.contains(targetEl, el)) {
+                        if (once) {
+                            removeElementEventTypeListener(el, _eventType, listener);
+                        }
+
+                        if (listener.call(targetEl, ev) === false) {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            ev.stopImmediatePropagation();
+                        }
+                    }
+                });
             };
             listener[proxyId] = proxy;
-            manageEvent(el, _eventType, proxy);
+            manageEvent(el, listenEvent, proxy);
         });
     }
 };
@@ -536,3 +559,45 @@ exports.emit = function (el, ev) {
 
     el.dispatchEvent(ev);
 };
+
+
+/**
+ * 特殊事件
+ * @param displayEventType {String} 显示事件类型
+ * @param listenEventType {String} 处理事件类型
+ * @param handle {Function} 事件处理
+ */
+var addSpecial = exports.special = function (displayEventType, listenEventType, handle) {
+    specialEvents[displayEventType] = {
+        d: displayEventType,
+        l: listenEventType,
+        h: handle
+    };
+};
+
+
+object.each({
+    mouseenter: 'mouseover',
+    mouseleave: 'mouseout'
+}, function (displayEventType, originEventType) {
+    addSpecial(displayEventType, originEventType, function (ev, callback) {
+        var target = this;
+        var related = ev.relatedTarget;
+
+        // For mouseenter/leave call the handler if related is outside the target.
+        // NB: No relatedTarget if the mouse left/entered the browser window
+        if (!related || ( related !== target && !selector.contains(related, target) )) {
+            var ev2 = {};
+            for (var i in ev) {
+                try {
+                    ev2[i] = ev[i];
+                } catch (err) {
+                    // ignore
+                }
+            }
+            ev2.type = displayEventType;
+            return callback.call(target, ev2);
+        }
+    });
+});
+
