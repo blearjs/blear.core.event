@@ -27,7 +27,6 @@
 
 'use strict';
 
-require('blear.polyfills.event');
 
 var access = require('blear.utils.access');
 var typeis = require('blear.utils.typeis');
