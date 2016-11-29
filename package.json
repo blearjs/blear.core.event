@@ -37,7 +37,6 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "blear.polyfills.event": "1.x",
     "blear.utils.access": "1.x",
     "blear.utils.typeis": "1.x",
     "blear.utils.object": "1.x",
