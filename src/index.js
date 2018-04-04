@@ -44,7 +44,7 @@ var IMMEDIATE_PROPAGATION_STOPPED = guid();
 var ONCED = guid();
 var eventStrore = {};
 var passiveSuppted = checkPassiveSuppted();
-var defaults = {
+var defaultOptions = {
     // 是否捕获：
     // 表示 listener 会在该类型的事件捕获阶段传播到该 EventTarget 时触发。
     capture: false,
@@ -56,7 +56,15 @@ var defaults = {
     // 表示 listener 在添加之后最多只调用一次。如果是 true， listener 会在其被调用之后自动移除。
     once: false
 };
-
+// 事件派生默认配置
+var defaultProperties = {
+    // 是否冒泡
+    bubbles: true,
+    // 是否可以被阻止冒泡
+    cancelable: true,
+    // 事情细节
+    detail: {}
+};
 
 /**
  * 事件监听
@@ -151,20 +159,87 @@ exports.once = function (el, type, sel, listener, options) {
     }
 };
 
-
-exports.create = function () {
-
+/**
+ * 指定特殊事件处理，比如处理 mouseenter 的代理通过 mousemove 来间接实现
+ * handle this = 元素
+ * handle args[0] = ev
+ * handle args[1] = listener
+ * @param displayType {String} 显示的事件类型
+ * @param originType {String} 原始的事件类型
+ * @param handle {Function} 处理方式
+ */
+exports.special = function(displayType, originType, handle) {
+    special(displayType, originType, handle);
 };
 
-exports.emit = function () {
+/**
+ * 获取指定类型事件的绑定长度
+ * @param el {Object} 对象
+ * @param type {String} 类型
+ * @returns {number}
+ */
+exports.length = function (el, type) {
+    var key = el[DOM_KEY];
 
+    if (!key) {
+        return 0;
+    }
+
+    var listenerList = eventStrore[key][LISTENER_MAP][type];
+
+    if (!listenerList) {
+        return 0;
+    }
+
+    return listenerList.length;
 };
 
-window.eventStrore = eventStrore;
+/**
+ * 事件创建
+ * @param type {String} 事件类型
+ * @param [properties] {Object} 事件属性
+ * @param [Constructor=Event] {Function} 事件构造器
+ * @returns {event}
+ */
+exports.create = function (type, properties, Constructor) {
+    var args = access.args(arguments);
+
+    switch (args.length) {
+        // .create(type);
+        case 1:
+            return create(type, null, Event);
+
+        // .create(type, Constructor);
+        // .create(type, properties);
+        case 2:
+            if (typeis.Function(args[1])) {
+                return create(type, null, args[1]);
+            }
+
+            return create(type, args[1], Event);
+
+        // .create(type, properties, Constructor);
+        case 3:
+            return create(type, properties, Constructor);
+    }
+};
+
+/**
+ * 事件发送
+ * @param el
+ * @param ev
+ * @returns {boolean}
+ */
+exports.emit = function (el, ev) {
+    if (typeis.String(ev)) {
+        ev = create(ev, null, Event);
+    }
+
+    return el.dispatchEvent(ev);
+};
+
 
 // ======================================================
-
-
 /**
  * 检测是否支持 passive
  * @returns {boolean}
@@ -186,7 +261,6 @@ function checkPassiveSuppted() {
     return passiveSupported;
 }
 
-
 /**
  * 事件监听
  * @param el
@@ -205,7 +279,7 @@ function on(el, type, sel, listener, options) {
 
     if (!optionsFlag) {
         options = typeis.Boolean(options) ? {capture: options} : options;
-        options = passiveSuppted ? object.assign({}, defaults, options) : Boolean(options.capture);
+        options = passiveSuppted ? object.assign({}, defaultOptions, options) : Boolean(options.capture);
         eventStrore[key][OPTIONS_FLAG] = options;
         el.addEventListener(type, function (ev) {
             delegate(el, wrapEvent(ev), sel, listenerList);
@@ -237,7 +311,15 @@ function unAllEvents(el) {
         return;
     }
 
-    eventStrore[key][LISTENER_MAP] = {};
+    var listenerMap = eventStrore[key][LISTENER_MAP];
+
+    if (!listenerMap) {
+        return;
+    }
+
+    object.each(listenerMap, function (type, list) {
+        list.length = 0;
+    });
 }
 
 /**
@@ -284,7 +366,6 @@ function unOneListener(el, type, listener) {
     array.delete(listenerList, listener);
 }
 
-
 /**
  * 事件包装
  * @param ev
@@ -299,7 +380,6 @@ function wrapEvent(ev) {
     };
     return ev;
 }
-
 
 /**
  * 代理
@@ -336,5 +416,87 @@ function delegate(el, ev, sel, list) {
         });
     }
 }
+
+/**
+ * 创建事件
+ * @param type
+ * @param properties
+ * @param Constructor
+ * @returns {event}
+ */
+function create(type, properties, Constructor) {
+    properties = object.assign({}, defaultProperties, properties);
+
+    var ev;
+    //var args;
+    //var eventTypeIndex = 0;
+
+    ev = new Constructor(type, properties);
+
+    //try {
+    //    // ie11+/chrome/firefox
+    //    ev = new Event(eventType, properties);
+    //} catch (err1) {
+    //    try {
+    //        // who?
+    //        ev = new CustomEvent(eventType, properties);
+    //    } catch (err2) {
+    //        // <= 10
+    //        args = [eventType, !!properties.bubbles, !!properties.cancelable, window, {},
+    //            0, 0, 0, 0, false, false, false, false, 0, null
+    //        ];
+    //
+    //        if (htmlEvents.indexOf(eventType)) {
+    //            eventTypeIndex = 1;
+    //        } else if (mouseEvents.test(eventType)) {
+    //            eventTypeIndex = 2;
+    //        } else if (uiEvents.test(eventType)) {
+    //            eventTypeIndex = 3;
+    //        } else if (mutationEvents.test(eventType)) {
+    //            eventTypeIndex = 4;
+    //        }
+    //
+    //        ev = document.createEvent(eventTypeArr[eventTypeIndex]);
+    //        ev['init' + eventInitArr[eventTypeIndex] + 'Event'].apply(ev, args);
+    //    }
+    //}
+
+    return ev;
+}
+
+
+function special(displayType, originType, handle) {
+    specialEvents[displayType] = {
+        d: displayType,
+        o: originType,
+        h: handle
+    };
+}
+
+
+object.each({
+    mouseenter: 'mouseover',
+    mouseleave: 'mouseout'
+}, function (displayEventType, originEventType) {
+    special(displayEventType, originEventType, function (ev, listener) {
+        var target = this;
+        var related = ev.relatedTarget;
+
+        // For mouseenter/leave call the handler if related is outside the target.
+        // NB: No relatedTarget if the mouse left/entered the browser window
+        if (!related || ( related !== target && !selector.contains(related, target) )) {
+            var ev2 = {};
+            for (var i in ev) {
+                try {
+                    ev2[i] = ev[i];
+                } catch (err) {
+                    // ignore
+                }
+            }
+            ev2.type = displayEventType;
+            return listener.call(target, ev2);
+        }
+    });
+});
 
 

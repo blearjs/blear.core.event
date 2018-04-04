@@ -187,7 +187,6 @@ describe('测试文件', function () {
         }, 100);
     });
 
-
     it('.on:4/.un:2', function (done) {
         var divEl = doc.createElement('div');
         var pEl = doc.createElement('p');
@@ -347,10 +346,10 @@ describe('测试文件', function () {
         doc.body.appendChild(divEl);
         var time1s = 0;
         var time2s = 0;
-        var fn1 =function () {
+        var fn1 = function () {
             time1s++;
         };
-        var fn2 =function () {
+        var fn2 = function () {
             time2s++;
         };
 
@@ -424,5 +423,21 @@ describe('测试文件', function () {
         expect(called).toEqual(false);
         doc.body.removeChild(divEl);
         done();
+    });
+
+    it('.create(ev)', function (done) {
+        var divEl = doc.createElement('div');
+        doc.body.appendChild(divEl);
+        var times = 0;
+        event.create('a');
+        event.on(divEl, 'a', function () {
+            times++;
+        });
+        event.emit(divEl, 'a');
+        setTimeout(function () {
+            expect(times).toBe(1);
+            doc.body.removeChild(divEl);
+            done();
+        }, 10);
     });
 });

@@ -2,6 +2,7 @@
  * karma 测试配置文件
  * @author ydr.me
  * @create 2016-04-20 21:15
+ * @update 2017年11月30日14:56:48
  */
 
 
