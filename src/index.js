@@ -36,8 +36,11 @@ var specialEvents = {};
 var standardHandle = function (ev, callback) {
     return callback.call(this, ev);
 };
-var DOM_KEY = random.guid();
-var EVENT_KEY = random.guid();
+var guid = random.guid;
+var DOM_KEY = guid();
+var LISTENER_MAP = guid();
+var OPTIONS_FLAG = guid();
+var eventStrore = {};
 var passiveSuppted = checkPassiveSuppted();
 var defaults = {
     // 是否捕获：
@@ -52,11 +55,36 @@ var defaults = {
     once: false
 };
 
-exports.on = function () {
+exports.on = function (el, type, sel, listener, options) {
+    var args = access.args(arguments);
+
+    switch (args.length) {
+        // .on(el, type, listener);
+        case 3:
+            on(el, type, el, args[2], false);
+            break;
+        // .on(el, type, listener, options);
+        // .on(el, type, sel, listener);
+        case 4:
+            if (typeis.Function(args[2])) {
+                on(el, type, el, args[2], args[3]);
+            } else {
+                on(el, type, sel, args[3], false);
+            }
+            break;
+
+        // .on(el, type, sel, listener, options);
+        case 5:
+            on(el, type, sel, listener, options);
+            break;
+    }
+};
+
+exports.un = function (el, type, listener) {
 
 };
 
-exports.un = function () {
+exports.once = function () {
 
 };
 
@@ -68,7 +96,10 @@ exports.emit = function () {
 
 };
 
+window.eventStrore = eventStrore;
+
 // ======================================================
+
 
 /**
  * 检测是否支持 passive
@@ -78,30 +109,72 @@ function checkPassiveSuppted() {
     var passiveSupported = false;
 
     try {
-        var options = Object.defineProperty({}, "passive", {
-            get: function() {
+        var options = Object.defineProperty({}, 'passive', {
+            get: function () {
                 passiveSupported = true;
             }
         });
 
-        window.addEventListener("test", null, options);
-    } catch(err) {}
+        window.addEventListener('a', null, options);
+    } catch (err) {
+    }
 
     return passiveSupported;
 }
 
 
 /**
- * 原生事件监听
+ * 事件监听
  * @param el
- * @param ev
+ * @param type
+ * @param sel
  * @param listener
  * @param options
  */
-function nativeAdd(el, ev, listener, options) {
-    el.addEventListener(ev, listener, options);
+function on(el, type, sel, listener, options) {
+    var key = el[DOM_KEY] = el[DOM_KEY] || guid();
+    eventStrore[key] = eventStrore[key] || {};
+    var listenerMap = eventStrore[key][LISTENER_MAP] = eventStrore[key][LISTENER_MAP] || {};
+    var optionsFlag = eventStrore[key][OPTIONS_FLAG] = eventStrore[key][OPTIONS_FLAG] || null;
+    var listenerList = listenerMap[type] = listenerMap[type] || [];
+    listenerMap[type].push(listener);
+
+    if (!optionsFlag) {
+        options = typeis.Boolean(options) ? {capture: options} : options;
+        options = passiveSuppted ? object.assign({}, defaults, options) : Boolean(options.capture);
+        eventStrore[key][OPTIONS_FLAG] = options;
+        el.addEventListener(type, function (ev) {
+            delegate(el, ev, sel, [].concat(listenerList));
+        }, options);
+    }
 }
 
 
+/**
+ * 代理
+ * @param el
+ * @param ev
+ * @param sel
+ * @param list
+ */
+function delegate(el, ev, sel, list) {
+    var closestEl = selector.closest(ev.target, sel)[0];
+    var falsed = false;
+
+    // 如果事件类型相同 && 最近节点存在 && 父子关系
+    if (closestEl && selector.contains(closestEl, el)) {
+        array.each(list, function (index, listener) {
+            if (listener.call(closestEl, ev) === false) {
+                if (!falsed) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    ev.stopImmediatePropagation();
+                }
+
+                falsed = true;
+            }
+        });
+    }
+}
 
 
