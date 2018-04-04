@@ -497,13 +497,13 @@ exports.length = function (el, eventType) {
  * @example
  * event.create('myclick');
  * event.create('myclick', {
-     *     bubbles: true,
-     *     cancelable: true,
-     *     detail: {
-     *        a: 1,
-     *        b: 2
-     *     },
-     * });
+ *     bubbles: true,
+ *     cancelable: true,
+ *     detail: {
+ *        a: 1,
+ *        b: 2
+ *     },
+ * });
  */
 var create = exports.create = function (eventType, properties) {
     properties = object.assign({}, defaults, properties);
