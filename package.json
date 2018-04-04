@@ -39,6 +39,7 @@
     "blear.utils.access": "1.x",
     "blear.utils.typeis": "1.x",
     "blear.utils.object": "1.x",
+    "blear.utils.random": "1.x",
     "blear.utils.array": "1.x",
     "blear.core.selector": "1.x"
   },
