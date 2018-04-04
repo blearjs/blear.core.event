@@ -41,6 +41,7 @@ var DOM_KEY = guid();
 var LISTENER_MAP = guid();
 var OPTIONS_FLAG = guid();
 var IMMEDIATE_PROPAGATION_STOPPED = guid();
+var ONCED = guid();
 var eventStrore = {};
 var passiveSuppted = checkPassiveSuppted();
 var defaults = {
@@ -56,6 +57,15 @@ var defaults = {
     once: false
 };
 
+
+/**
+ * 事件监听
+ * @param el {Object} 对象
+ * @param type {String} 事件类型
+ * @param [sel] {String|Object} 选择器
+ * @param listener {Function} 监听函数
+ * @param [options] {Object|Boolean} 参数
+ */
 exports.on = function (el, type, sel, listener, options) {
     var args = access.args(arguments);
 
@@ -81,13 +91,66 @@ exports.on = function (el, type, sel, listener, options) {
     }
 };
 
+/**
+ * 接触事件绑定
+ * @param el {Object} 对象
+ * @param [type] {String} 事件类型
+ * @param [listener] {Function} 事件函数
+ */
 exports.un = function (el, type, listener) {
+    var args = access.args(arguments);
 
+    switch (args.length) {
+        // .un(el);
+        case 1:
+            unAllEvents(el);
+            break;
+
+        // .un(el, type);
+        case 2:
+            unAllListeners(el, type);
+            break;
+
+        // .un(el, type, listener);
+        case 3:
+            unOneListener(el, type, listener);
+            break;
+    }
 };
 
-exports.once = function () {
+/**
+ * 【单次】事件监听
+ * @param el {Object} 对象
+ * @param type {String} 事件类型
+ * @param [sel] {String|Object} 选择器
+ * @param listener {Function} 监听函数
+ * @param [options] {Object|Boolean} 参数
+ */
+exports.once = function (el, type, sel, listener, options) {
+    var args = access.args(arguments);
 
+    switch (args.length) {
+        // .on(el, type, listener);
+        case 3:
+            once(el, type, el, args[2], false);
+            break;
+        // .on(el, type, listener, options);
+        // .on(el, type, sel, listener);
+        case 4:
+            if (typeis.Function(args[2])) {
+                once(el, type, el, args[2], args[3]);
+            } else {
+                once(el, type, sel, args[3], false);
+            }
+            break;
+
+        // .on(el, type, sel, listener, options);
+        case 5:
+            once(el, type, sel, listener, options);
+            break;
+    }
 };
+
 
 exports.create = function () {
 
@@ -145,9 +208,80 @@ function on(el, type, sel, listener, options) {
         options = passiveSuppted ? object.assign({}, defaults, options) : Boolean(options.capture);
         eventStrore[key][OPTIONS_FLAG] = options;
         el.addEventListener(type, function (ev) {
-            delegate(el, wrapEvent(ev), sel, [].concat(listenerList));
+            delegate(el, wrapEvent(ev), sel, listenerList);
         }, options);
     }
+}
+
+/**
+ * 【单次】事件监听
+ * @param el
+ * @param type
+ * @param sel
+ * @param listener
+ * @param options
+ */
+function once(el, type, sel, listener, options) {
+    listener[ONCED] = true;
+    on(el, type, sel, listener, options);
+}
+
+/**
+ * 删除所有事件
+ * @param el
+ */
+function unAllEvents(el) {
+    var key = el[DOM_KEY];
+
+    if (!key) {
+        return;
+    }
+
+    eventStrore[key][LISTENER_MAP] = {};
+}
+
+/**
+ * 删除指定类型的所有事件
+ * @param el
+ * @param type
+ */
+function unAllListeners(el, type) {
+    var key = el[DOM_KEY];
+
+    if (!key) {
+        return;
+    }
+
+    var listenerList = eventStrore[key][LISTENER_MAP][type];
+
+    if (!listenerList) {
+        return;
+    }
+
+    // 必须这么操作才是操作原始数组的引用
+    listenerList.length = 0;
+}
+
+/**
+ * 删除一个事件
+ * @param el
+ * @param type
+ * @param listener
+ */
+function unOneListener(el, type, listener) {
+    var key = el[DOM_KEY];
+
+    if (!key) {
+        return;
+    }
+
+    var listenerList = eventStrore[key][LISTENER_MAP][type];
+
+    if (!listenerList) {
+        return;
+    }
+
+    array.delete(listenerList, listener);
 }
 
 
@@ -177,10 +311,11 @@ function wrapEvent(ev) {
 function delegate(el, ev, sel, list) {
     var closestEl = selector.closest(ev.target, sel)[0];
     var falsed = false;
+    var listCopied = [].concat(list);
 
     // 如果事件类型相同 && 最近节点存在 && 父子关系
     if (closestEl && selector.contains(closestEl, el)) {
-        array.each(list, function (index, listener) {
+        array.each(listCopied, function (index, listener) {
             if (listener.call(closestEl, ev) === false) {
                 if (!falsed) {
                     ev.preventDefault();
@@ -189,6 +324,10 @@ function delegate(el, ev, sel, list) {
                 }
 
                 falsed = true;
+            }
+
+            if (listener[ONCED]) {
+                array.remove(list, index);
             }
 
             if (ev[IMMEDIATE_PROPAGATION_STOPPED]) {
