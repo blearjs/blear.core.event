@@ -71,17 +71,6 @@ exports.emit = function () {
 // ======================================================
 
 /**
- * 原生事件监听
- * @param el
- * @param ev
- * @param listener
- * @param options
- */
-function nativeAdd(el, ev, listener, options) {
-    el.addEventListener(ev, listener, options);
-}
-
-/**
  * 检测是否支持 passive
  * @returns {boolean}
  */
@@ -99,6 +88,18 @@ function checkPassiveSuppted() {
     } catch(err) {}
 
     return passiveSupported;
+}
+
+
+/**
+ * 原生事件监听
+ * @param el
+ * @param ev
+ * @param listener
+ * @param options
+ */
+function nativeAdd(el, ev, listener, options) {
+    el.addEventListener(ev, listener, options);
 }
 
 
