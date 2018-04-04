@@ -40,6 +40,7 @@ var guid = random.guid;
 var DOM_KEY = guid();
 var LISTENER_MAP = guid();
 var OPTIONS_FLAG = guid();
+var IMMEDIATE_PROPAGATION_STOPPED = guid();
 var eventStrore = {};
 var passiveSuppted = checkPassiveSuppted();
 var defaults = {
@@ -144,9 +145,25 @@ function on(el, type, sel, listener, options) {
         options = passiveSuppted ? object.assign({}, defaults, options) : Boolean(options.capture);
         eventStrore[key][OPTIONS_FLAG] = options;
         el.addEventListener(type, function (ev) {
-            delegate(el, ev, sel, [].concat(listenerList));
+            delegate(el, wrapEvent(ev), sel, [].concat(listenerList));
         }, options);
     }
+}
+
+
+/**
+ * 事件包装
+ * @param ev
+ * @returns {*}
+ */
+function wrapEvent(ev) {
+    var stopImmediatePropagation = ev.stopImmediatePropagation;
+    ev[IMMEDIATE_PROPAGATION_STOPPED] = false;
+    ev.stopImmediatePropagation = function () {
+        ev[IMMEDIATE_PROPAGATION_STOPPED] = true;
+        return stopImmediatePropagation.call(ev);
+    };
+    return ev;
 }
 
 
@@ -172,6 +189,10 @@ function delegate(el, ev, sel, list) {
                 }
 
                 falsed = true;
+            }
+
+            if (ev[IMMEDIATE_PROPAGATION_STOPPED]) {
+                return false;
             }
         });
     }
