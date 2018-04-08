@@ -36,7 +36,8 @@ var standardHandle = function (ev, callback) {
     return callback.call(this, ev);
 };
 var guid = random.guid;
-var DOM_KEY = guid();
+var BUBBLE_MODE_KEY = guid();
+var CAPTURE_MODE_KEY = guid();
 var LISTENER_MAP = guid();
 var OPTIONS_FLAG = guid();
 var IMMEDIATE_PROPAGATION_STOPPED = guid();
@@ -180,19 +181,23 @@ exports.special = function (displayType, originType, handle) {
  * @returns {number}
  */
 exports.length = function (el, type) {
-    var key = el[DOM_KEY];
+    var len = 0;
 
-    if (!key) {
-        return 0;
-    }
+    eachMode(function (key) {
+        if (!key) {
+            return;
+        }
 
-    var listenerList = eventStrore[key][LISTENER_MAP][type];
+        var listenerList = eventStrore[key][LISTENER_MAP][type];
 
-    if (!listenerList) {
-        return 0;
-    }
+        if (!listenerList) {
+            return;
+        }
 
-    return listenerList.length;
+        len += listenerList.length;
+    });
+
+    return len;
 };
 
 /**
@@ -283,8 +288,11 @@ function checkPassiveSuppted() {
 function on(el, type, sel, listener, options) {
     var specialEvent = specialEvents[type];
     type = specialEvent ? specialEvent.o : type;
+    options = typeis.Boolean(options) ? {capture: options} : options;
+    options = passiveSuppted ? object.assign({}, defaultOptions, options) : Boolean(options.capture);
+    var keyName = options === true || options && options.capture === true ? CAPTURE_MODE_KEY : BUBBLE_MODE_KEY;
     var handle = specialEvent ? specialEvent.h : standardHandle;
-    var key = el[DOM_KEY] = el[DOM_KEY] || guid();
+    var key = el[keyName] = el[keyName] || guid();
     eventStrore[key] = eventStrore[key] || {};
     var listenerMap = eventStrore[key][LISTENER_MAP] = eventStrore[key][LISTENER_MAP] || {};
     var optionsFlag = eventStrore[key][OPTIONS_FLAG] = eventStrore[key][OPTIONS_FLAG] || null;
@@ -292,8 +300,6 @@ function on(el, type, sel, listener, options) {
     listenerMap[type].push(listener);
 
     if (!optionsFlag) {
-        options = typeis.Boolean(options) ? {capture: options} : options;
-        options = passiveSuppted ? object.assign({}, defaultOptions, options) : Boolean(options.capture);
         eventStrore[key][OPTIONS_FLAG] = options;
         el.addEventListener(type, function (ev) {
             var closestEl = selector.closest(ev.target, sel)[0];
@@ -321,25 +327,31 @@ function once(el, type, sel, listener, options) {
     on(el, type, sel, listener, options);
 }
 
+function eachMode(callback) {
+    array.each([BUBBLE_MODE_KEY, CAPTURE_MODE_KEY], function (index, key) {
+        return callback(key);
+    });
+}
+
 /**
  * 删除所有事件
  * @param el
  */
 function unAllEvents(el) {
-    var key = el[DOM_KEY];
+    eachMode(function (key) {
+        if (!key) {
+            return;
+        }
 
-    if (!key) {
-        return;
-    }
+        var listenerMap = eventStrore[key][LISTENER_MAP];
 
-    var listenerMap = eventStrore[key][LISTENER_MAP];
+        if (!listenerMap) {
+            return;
+        }
 
-    if (!listenerMap) {
-        return;
-    }
-
-    object.each(listenerMap, function (type, list) {
-        list.length = 0;
+        object.each(listenerMap, function (type, list) {
+            list.length = 0;
+        });
     });
 }
 
@@ -349,20 +361,20 @@ function unAllEvents(el) {
  * @param type
  */
 function unAllListeners(el, type) {
-    var key = el[DOM_KEY];
+    eachMode(function (key) {
+        if (!key) {
+            return;
+        }
 
-    if (!key) {
-        return;
-    }
+        var listenerList = eventStrore[key][LISTENER_MAP][type];
 
-    var listenerList = eventStrore[key][LISTENER_MAP][type];
+        if (!listenerList) {
+            return;
+        }
 
-    if (!listenerList) {
-        return;
-    }
-
-    // 必须这么操作才是操作原始数组的引用
-    listenerList.length = 0;
+        // 必须这么操作才是操作原始数组的引用
+        listenerList.length = 0;
+    });
 }
 
 /**
@@ -372,19 +384,19 @@ function unAllListeners(el, type) {
  * @param listener
  */
 function unOneListener(el, type, listener) {
-    var key = el[DOM_KEY];
+    eachMode(function (key) {
+        if (!key) {
+            return;
+        }
 
-    if (!key) {
-        return;
-    }
+        var listenerList = eventStrore[key][LISTENER_MAP][type];
 
-    var listenerList = eventStrore[key][LISTENER_MAP][type];
+        if (!listenerList) {
+            return;
+        }
 
-    if (!listenerList) {
-        return;
-    }
-
-    array.delete(listenerList, listener);
+        array.delete(listenerList, listener);
+    });
 }
 
 /**

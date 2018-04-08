@@ -25,7 +25,35 @@ describe('测试文件', function () {
         event.emit(divEl, 'click');
     });
 
-    it('.on:4', function (done) {
+    it('.on:4 options', function (done) {
+        var divEl = doc.createElement('div');
+
+        divEl.innerHTML = '' +
+            '<ul>' +
+            /**/'<li>' +
+            /**//**/'<p>' +
+            /**//**//**/'<button>click me</button>' +
+            /**//**/'</p>' +
+            /**/'</li>' +
+            '</ul>';
+        doc.body.appendChild(divEl);
+        var btnEl = divEl.getElementsByTagName('button')[0];
+
+        event.on(divEl, 'click', function (ev) {
+            // 捕获阶段
+            expect(ev.eventPhase).toBe(1);
+            expect(this.tagName).toEqual('DIV');
+            expect(ev.type).toEqual('click');
+            doc.body.removeChild(divEl);
+            done();
+        }, {
+            capture: true
+        });
+
+        event.emit(btnEl, 'click');
+    });
+
+    it('.on:4 function', function (done) {
         var divEl = doc.createElement('div');
 
         divEl.innerHTML = '' +
