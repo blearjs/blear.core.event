@@ -478,24 +478,24 @@ function create(type, properties, Constructor) {
 
 /**
  * 克隆一个事件
- * @param ev
+ * @param ev1
  * @param [type]
  * @returns {event}
  */
-function clone(ev, type) {
-    var properties = {
-        originalEvent: ev
-    };
+function clone(ev1, type) {
+    var properties = {};
 
     try {
-        for (var key in ev) {
-            properties[key] = ev[key];
+        for (var key in ev1) {
+            properties[key] = ev1[key];
         }
     } catch (err) {
         // ignore
     }
 
-    return create(type || ev.type, properties, ev.constructor);
+    var ev2 = create(type || ev1.type, properties, ev1.constructor);
+    ev2.originalEvent = ev1;
+    return ev2;
 }
 
 
