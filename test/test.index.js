@@ -11,7 +11,7 @@ var doc = window.document;
 var event = require('../src/index.js');
 var selector = require('blear.core.selector');
 
-describe('测试文件', function () {
+describe('blear.core.event unit test', function () {
     it('.on:3', function (done) {
         var divEl = doc.createElement('div');
         doc.body.appendChild(divEl);
@@ -25,7 +25,7 @@ describe('测试文件', function () {
         event.emit(divEl, 'click');
     });
 
-    it('.on:4 options', function (done) {
+    it('.on:4 options:object', function (done) {
         var divEl = doc.createElement('div');
 
         divEl.innerHTML = '' +
@@ -53,6 +53,32 @@ describe('测试文件', function () {
         event.emit(btnEl, 'click');
     });
 
+    it('.on:4 options:boolean', function (done) {
+        var divEl = doc.createElement('div');
+
+        divEl.innerHTML = '' +
+            '<ul>' +
+            /**/'<li>' +
+            /**//**/'<p>' +
+            /**//**//**/'<button>click me</button>' +
+            /**//**/'</p>' +
+            /**/'</li>' +
+            '</ul>';
+        doc.body.appendChild(divEl);
+        var btnEl = divEl.getElementsByTagName('button')[0];
+
+        event.on(divEl, 'click', function (ev) {
+            // 捕获阶段
+            expect(ev.eventPhase).toBe(1);
+            expect(this.tagName).toEqual('DIV');
+            expect(ev.type).toEqual('click');
+            doc.body.removeChild(divEl);
+            done();
+        }, true);
+
+        event.emit(btnEl, 'click');
+    });
+
     it('.on:4 function', function (done) {
         var divEl = doc.createElement('div');
 
@@ -75,6 +101,126 @@ describe('测试文件', function () {
         });
 
         event.emit(btnEl, 'click');
+    });
+
+    it('.on:5', function (done) {
+        var divEl = document.createElement('div');
+
+        divEl.innerHTML = '' +
+            '<ul>' +
+            /**/'<li>' +
+            /**//**/'<p>' +
+            /**//**//**/'<button>click me</button>' +
+            /**//**/'</p>' +
+            /**/'</li>' +
+            '</ul>';
+        doc.body.appendChild(divEl);
+        var btnEl = divEl.getElementsByTagName('button')[0];
+
+        event.on(divEl, 'click', 'li', function (ev) {
+            // 捕获阶段
+            expect(ev.eventPhase).toBe(1);
+            expect(this.tagName).toEqual('LI');
+            expect(ev.type).toEqual('click');
+            doc.body.removeChild(divEl);
+            done();
+        }, true);
+
+        event.emit(btnEl, 'click');
+    });
+
+    it('.on preventDefault', function (done) {
+        var divEl = document.createElement('div');
+        var evList = [];
+
+        event.on(divEl, 'click', function (ev) {
+            evList.push(ev);
+            ev.preventDefault();
+        });
+
+        event.on(divEl, 'click', function (ev) {
+            evList.push(ev);
+        });
+
+        event.emit(divEl, 'click');
+
+        setTimeout(function () {
+            expect(evList.length).toBe(2);
+            expect(evList[0].defaultPrevented).toBe(true);
+            expect(evList[1].defaultPrevented).toBe(true);
+            done();
+        }, 10);
+    });
+
+    it('.on stopPropagation', function (done) {
+        var divEl = document.createElement('div');
+
+        document.body.appendChild(divEl);
+        var evList = [];
+
+        event.on(divEl, 'click', function (ev) {
+            ev.stopPropagation();
+            evList.push(ev);
+        });
+
+        event.on(document.body, 'click', function (ev) {
+            evList.push(ev);
+        });
+
+        event.emit(divEl, event.create('click', MouseEvent));
+
+        setTimeout(function () {
+            expect(evList.length).toBe(1);
+            document.body.removeChild(divEl);
+            done();
+        }, 10);
+    });
+
+    it('.on stopImmediatePropagation', function (done) {
+        var divEl = document.createElement('div');
+        var evList = [];
+
+        event.on(divEl, 'click', function (ev) {
+            evList.push(ev);
+            ev.stopImmediatePropagation();
+        });
+
+        event.on(divEl, 'click', function (ev) {
+            evList.push(ev);
+        });
+
+        event.emit(divEl, 'click');
+
+        setTimeout(function () {
+            expect(evList.length).toBe(1);
+            done();
+        }, 10);
+    });
+
+    it('.on return false', function (done) {
+        var divEl = document.createElement('div');
+        var evList = [];
+
+        event.on(divEl, 'click', function (ev) {
+            evList.push(ev);
+            return false;
+        });
+
+        event.on(divEl, 'click', function (ev) {
+            evList.push(ev);
+        });
+
+        event.on(divEl, 'click', function (ev) {
+            evList.push(ev);
+        });
+
+        event.emit(divEl, 'click');
+
+        setTimeout(function () {
+            expect(evList.length).toBe(1);
+            expect(evList[0].defaultPrevented).toBe(true);
+            done();
+        }, 10);
     });
 
     it('.on:3/.un:1', function (done) {
@@ -351,6 +497,111 @@ describe('测试文件', function () {
         done();
     });
 
+    it('.once:4 options:object', function (done) {
+        var divEl = doc.createElement('div');
+
+        divEl.innerHTML = '' +
+            '<ul>' +
+            /**/'<li>' +
+            /**//**/'<p>' +
+            /**//**//**/'<button>click me</button>' +
+            /**//**/'</p>' +
+            /**/'</li>' +
+            '</ul>';
+        doc.body.appendChild(divEl);
+        var btnEl = divEl.getElementsByTagName('button')[0];
+        var times = 0;
+        var tagNameList = [];
+
+        event.once(divEl, 'click', function (ev) {
+            times++;
+            tagNameList.push(this.tagName.toUpperCase());
+        }, {
+            capture: true
+        });
+
+        event.emit(btnEl, 'click');
+        event.emit(btnEl, 'click');
+
+        setTimeout(function () {
+            doc.body.removeChild(divEl);
+            expect(times).toBe(1);
+            expect(tagNameList.length).toBe(1);
+            expect(tagNameList[0]).toBe('DIV');
+            done();
+        }, 10);
+    });
+
+    it('.once:4 options:boolean', function (done) {
+        var divEl = doc.createElement('div');
+
+        divEl.innerHTML = '' +
+            '<ul>' +
+            /**/'<li>' +
+            /**//**/'<p>' +
+            /**//**//**/'<button>click me</button>' +
+            /**//**/'</p>' +
+            /**/'</li>' +
+            '</ul>';
+        doc.body.appendChild(divEl);
+        var btnEl = divEl.getElementsByTagName('button')[0];
+        var times = 0;
+        var tagNameList = [];
+
+        event.once(divEl, 'click', function (ev) {
+            times++;
+            tagNameList.push(this.tagName.toUpperCase());
+        }, {
+            capture: true
+        });
+
+        event.emit(btnEl, 'click');
+        event.emit(btnEl, 'click');
+
+        setTimeout(function () {
+            doc.body.removeChild(divEl);
+            expect(times).toBe(1);
+            expect(tagNameList.length).toBe(1);
+            expect(tagNameList[0]).toBe('DIV');
+            done();
+        }, 10);
+    });
+
+    it('.once:5', function (done) {
+        var divEl = doc.createElement('div');
+
+        divEl.innerHTML = '' +
+            '<ul>' +
+            /**/'<li>' +
+            /**//**/'<p>' +
+            /**//**//**/'<button>click me</button>' +
+            /**//**/'</p>' +
+            /**/'</li>' +
+            '</ul>';
+        doc.body.appendChild(divEl);
+        var btnEl = divEl.getElementsByTagName('button')[0];
+        var times = 0;
+        var tagNameList = [];
+
+        event.once(divEl, 'click', 'li', function (ev) {
+            times++;
+            tagNameList.push(this.tagName.toUpperCase());
+        }, {
+            capture: true
+        });
+
+        event.emit(btnEl, 'click');
+        event.emit(btnEl, 'click');
+
+        setTimeout(function () {
+            doc.body.removeChild(divEl);
+            expect(times).toBe(1);
+            expect(tagNameList.length).toBe(1);
+            expect(tagNameList[0]).toBe('LI');
+            done();
+        }, 10);
+    });
+
     it('.once/.un:2', function (done) {
         var divEl = doc.createElement('div');
         doc.body.appendChild(divEl);
@@ -465,6 +716,143 @@ describe('测试文件', function () {
         setTimeout(function () {
             expect(times).toBe(1);
             doc.body.removeChild(divEl);
+            done();
+        }, 10);
+    });
+
+    it('.create(ev, Constructor)', function (done) {
+        var divEl = doc.createElement('div');
+        doc.body.appendChild(divEl);
+        var times = 0;
+        var ev = null;
+        event.on(divEl, 'a', function (_ev) {
+            times++;
+            ev = _ev;
+        });
+        event.emit(divEl, event.create('a', MouseEvent));
+        setTimeout(function () {
+            expect(times).toBe(1);
+            expect(ev.type).toBe('a');
+            expect(ev.constructor).toBe(MouseEvent);
+            doc.body.removeChild(divEl);
+            done();
+        }, 10);
+    });
+
+    it('.create(ev, properties)', function (done) {
+        var divEl = doc.createElement('div');
+        doc.body.appendChild(divEl);
+        var times = 0;
+        var ev = null;
+        event.on(divEl, 'a', function (_ev) {
+            times++;
+            ev = _ev;
+        });
+        event.emit(divEl, event.create('a', {
+            bubbles: false
+        }));
+        setTimeout(function () {
+            expect(times).toBe(1);
+            expect(ev.type).toBe('a');
+            expect(ev.constructor).toBe(Event);
+            expect(ev.bubbles).toBe(false);
+            doc.body.removeChild(divEl);
+            done();
+        }, 10);
+    });
+
+    it('.create(ev, properties, Constructor)', function (done) {
+        var divEl = doc.createElement('div');
+        doc.body.appendChild(divEl);
+        var times = 0;
+        var ev = null;
+        event.on(divEl, 'a', function (_ev) {
+            times++;
+            ev = _ev;
+        });
+        event.emit(divEl, event.create('a', {
+            bubbles: false,
+            clientX: 100
+        }, MouseEvent));
+        setTimeout(function () {
+            expect(times).toBe(1);
+            expect(ev.type).toBe('a');
+            expect(ev.constructor).toBe(MouseEvent);
+            expect(ev.bubbles).toBe(false);
+            expect(ev.clientX).toBe(100);
+            doc.body.removeChild(divEl);
+            done();
+        }, 10);
+    });
+
+    it('.special', function (done) {
+        event.special('abc', 'click', function (ev, listener) {
+            ev.abc = parseInt(ev.timeStamp);
+            listener.call(this, ev);
+        });
+
+        var divEl = document.createElement('div');
+        event.on(divEl, 'abc', function (ev) {
+            expect(typeof ev.abc).toBe('number');
+            done();
+        });
+
+        event.emit(divEl, 'click');
+    });
+
+    it('.clone(ev)', function (done) {
+        var divEl = document.createElement('div');
+
+        event.on(divEl, 'click', function (ev) {
+            var ev2 = event.clone(ev);
+
+            expect(ev2.originalEvent).toBe(ev);
+            expect(ev2.type).toBe(ev.type);
+            expect(ev2).not.toBe(ev);
+            done();
+        });
+        event.emit(divEl, 'click');
+    });
+
+    it('.clone(ev, type)', function (done) {
+        var divEl = document.createElement('div');
+
+        event.on(divEl, 'click', function (ev) {
+            var ev2 = event.clone(ev, 'click2');
+
+            expect(ev2.originalEvent).toBe(ev);
+            expect(ev2.type).toBe('click2');
+            expect(ev2).not.toBe(ev);
+            done();
+        });
+        event.emit(divEl, 'click');
+    });
+
+    it('mouseenter', function (done) {
+        var divEl = document.createElement('div');
+
+        divEl.innerHTML = '' +
+            '<ul>' +
+            /**/'<li>' +
+            /**//**/'<p>' +
+            /**//**//**/'<span></span>' +
+            /**//**/'</p>' +
+            /**/'</li>' +
+            '</ul>';
+        doc.body.appendChild(divEl);
+        var liEl = divEl.getElementsByTagName('li')[0];
+        var pEl = liEl.getElementsByTagName('p')[0];
+        var spanEl = pEl.getElementsByTagName('span')[0];
+        var evList = [];
+
+        event.on(divEl, 'mouseenter', 'li', function (ev) {
+            evList.push(ev);
+        });
+        event.emit(spanEl, event.create('mouseover', MouseEvent));
+
+        setTimeout(function () {
+            document.body.removeChild(divEl);
+            expect(evList.length).toBe(1);
             done();
         }, 10);
     });
