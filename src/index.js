@@ -283,7 +283,7 @@ function on(el, type, sel, listener, options) {
     var specialEvent = specialEvents[type];
     type = specialEvent ? specialEvent.o : type;
     var handle = specialEvent ? specialEvent.h : function (ev, listener) {
-        listener.call(el, ev);
+        listener.call(this, ev);
     };
     var key = el[DOM_KEY] = el[DOM_KEY] || guid();
     eventStrore[key] = eventStrore[key] || {};
@@ -498,7 +498,6 @@ function clone(ev1, type) {
     return ev2;
 }
 
-
 /**
  * 特殊处理事件
  * @param displayType
@@ -512,7 +511,6 @@ function special(displayType, originType, handle) {
         h: handle
     };
 }
-
 
 object.each({
     mouseenter: 'mouseover',
