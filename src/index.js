@@ -183,18 +183,16 @@ exports.special = function (displayType, originType, handle) {
 exports.length = function (el, type) {
     var len = 0;
 
-    eachMode(function (key) {
-        if (!key) {
-            return;
+    eachMode(function (mode) {
+        var key = el[mode];
+
+        if (key &&
+            eventStrore[key] &&
+            eventStrore[key][LISTENER_MAP] &&
+            eventStrore[key][LISTENER_MAP][type]
+        ) {
+            len += eventStrore[key][LISTENER_MAP][type].length;
         }
-
-        var listenerList = eventStrore[key][LISTENER_MAP][type];
-
-        if (!listenerList) {
-            return;
-        }
-
-        len += listenerList.length;
     });
 
     return len;
@@ -327,9 +325,16 @@ function once(el, type, sel, listener, options) {
     on(el, type, sel, listener, options);
 }
 
+/**
+ * 遍历每一种模式（冒泡、捕获）
+ * @param callback
+ */
 function eachMode(callback) {
-    array.each([BUBBLE_MODE_KEY, CAPTURE_MODE_KEY], function (index, key) {
-        return callback(key);
+    array.each([
+        BUBBLE_MODE_KEY,
+        CAPTURE_MODE_KEY
+    ], function (index, mode) {
+        return callback(mode);
     });
 }
 
@@ -338,20 +343,17 @@ function eachMode(callback) {
  * @param el
  */
 function unAllEvents(el) {
-    eachMode(function (key) {
-        if (!key) {
-            return;
+    eachMode(function (mode) {
+        var key = el[mode];
+
+        if (key &&
+            eventStrore[key] &&
+            eventStrore[key][LISTENER_MAP]
+        ) {
+            object.each(eventStrore[key][LISTENER_MAP], function (type, list) {
+                list.length = 0;
+            });
         }
-
-        var listenerMap = eventStrore[key][LISTENER_MAP];
-
-        if (!listenerMap) {
-            return;
-        }
-
-        object.each(listenerMap, function (type, list) {
-            list.length = 0;
-        });
     });
 }
 
@@ -361,19 +363,17 @@ function unAllEvents(el) {
  * @param type
  */
 function unAllListeners(el, type) {
-    eachMode(function (key) {
-        if (!key) {
-            return;
+    eachMode(function (mode) {
+        var key = el[mode];
+
+        if (key &&
+            eventStrore[key] &&
+            eventStrore[key][LISTENER_MAP] &&
+            eventStrore[key][LISTENER_MAP][type]
+        ) {
+            // 必须这么操作才是操作原始数组的引用
+            eventStrore[key][LISTENER_MAP][type].length = 0;
         }
-
-        var listenerList = eventStrore[key][LISTENER_MAP][type];
-
-        if (!listenerList) {
-            return;
-        }
-
-        // 必须这么操作才是操作原始数组的引用
-        listenerList.length = 0;
     });
 }
 
@@ -384,18 +384,16 @@ function unAllListeners(el, type) {
  * @param listener
  */
 function unOneListener(el, type, listener) {
-    eachMode(function (key) {
-        if (!key) {
-            return;
+    eachMode(function (mode) {
+        var key = el[mode];
+
+        if (key &&
+            eventStrore[key] &&
+            eventStrore[key][LISTENER_MAP] &&
+            eventStrore[key][LISTENER_MAP][type]
+        ) {
+            array.delete(eventStrore[key][LISTENER_MAP][type], listener);
         }
-
-        var listenerList = eventStrore[key][LISTENER_MAP][type];
-
-        if (!listenerList) {
-            return;
-        }
-
-        array.delete(listenerList, listener);
     });
 }
 
