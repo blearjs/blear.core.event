@@ -447,13 +447,14 @@ function delegate(el, ev, list) {
  */
 function create(type, properties, Constructor) {
     properties = object.assign({}, defaultProperties, properties);
+    return new Constructor(type, properties);
 
-    var ev;
+    // var ev;
     //var args;
     //var eventTypeIndex = 0;
-
-    ev = new Constructor(type, properties);
-
+    //
+    // ev = new Constructor(type, properties);
+    //
     //try {
     //    // ie11+/chrome/firefox
     //    ev = new Event(eventType, properties);
@@ -481,8 +482,8 @@ function create(type, properties, Constructor) {
     //        ev['init' + eventInitArr[eventTypeIndex] + 'Event'].apply(ev, args);
     //    }
     //}
-
-    return ev;
+    //
+    // return ev;
 }
 
 /**
