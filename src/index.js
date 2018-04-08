@@ -31,7 +31,6 @@ var random = require('blear.utils.random');
 var selector = require('blear.core.selector');
 
 
-var w3c = !!window.FormData;
 var specialEvents = {};
 var standardHandle = function (ev, callback) {
     return callback.call(this, ev);
@@ -78,22 +77,23 @@ exports.on = function (el, type, sel, listener, options) {
     var args = access.args(arguments);
 
     switch (args.length) {
-        // .on(el, type, listener);
         case 3:
+            // .on(el, type, listener);
             on(el, type, el, args[2], false);
             break;
-        // .on(el, type, listener, options);
-        // .on(el, type, sel, listener);
         case 4:
+            // .on(el, type, listener, options);
             if (typeis.Function(args[2])) {
                 on(el, type, el, args[2], args[3]);
-            } else {
+            }
+            // .on(el, type, sel, listener);
+            else {
                 on(el, type, sel, args[3], false);
             }
             break;
 
-        // .on(el, type, sel, listener, options);
         case 5:
+            // .on(el, type, sel, listener, options);
             on(el, type, sel, listener, options);
             break;
     }
@@ -109,18 +109,18 @@ exports.un = function (el, type, listener) {
     var args = access.args(arguments);
 
     switch (args.length) {
-        // .un(el);
         case 1:
+            // .un(el);
             unAllEvents(el);
             break;
 
-        // .un(el, type);
         case 2:
+            // .un(el, type);
             unAllListeners(el, type);
             break;
 
-        // .un(el, type, listener);
         case 3:
+            // .un(el, type, listener);
             unOneListener(el, type, listener);
             break;
     }
@@ -138,22 +138,23 @@ exports.once = function (el, type, sel, listener, options) {
     var args = access.args(arguments);
 
     switch (args.length) {
-        // .on(el, type, listener);
         case 3:
+            // .once(el, type, listener);
             once(el, type, el, args[2], false);
             break;
-        // .on(el, type, listener, options);
-        // .on(el, type, sel, listener);
         case 4:
+            // .once(el, type, listener, options);
             if (typeis.Function(args[2])) {
                 once(el, type, el, args[2], args[3]);
-            } else {
+            }
+            // .once(el, type, sel, listener);
+            else {
                 once(el, type, sel, args[3], false);
             }
             break;
 
-        // .on(el, type, sel, listener, options);
         case 5:
+            // .once(el, type, sel, listener, options);
             once(el, type, sel, listener, options);
             break;
     }
@@ -205,21 +206,21 @@ exports.create = function (type, properties, Constructor) {
     var args = access.args(arguments);
 
     switch (args.length) {
-        // .create(type);
         case 1:
+            // .create(type);
             return create(type, null, Event);
 
-        // .create(type, Constructor);
-        // .create(type, properties);
         case 2:
+            // .create(type, Constructor);
             if (typeis.Function(args[1])) {
                 return create(type, null, args[1]);
             }
 
+            // .create(type, properties);
             return create(type, args[1], Event);
 
-        // .create(type, properties, Constructor);
         case 3:
+            // .create(type, properties, Constructor);
             return create(type, properties, Constructor);
     }
 };
@@ -282,9 +283,7 @@ function checkPassiveSuppted() {
 function on(el, type, sel, listener, options) {
     var specialEvent = specialEvents[type];
     type = specialEvent ? specialEvent.o : type;
-    var handle = specialEvent ? specialEvent.h : function (ev, listener) {
-        listener.call(this, ev);
-    };
+    var handle = specialEvent ? specialEvent.h : standardHandle;
     var key = el[DOM_KEY] = el[DOM_KEY] || guid();
     eventStrore[key] = eventStrore[key] || {};
     var listenerMap = eventStrore[key][LISTENER_MAP] = eventStrore[key][LISTENER_MAP] || {};
