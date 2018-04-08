@@ -26,6 +26,6 @@ var mouseenterDelegate = function (el, sel) {
 var ulEl = document.getElementById('demo');
 // mouseenterDelegate(ulEl, 'li');
 event.on(ulEl, 'mouseenter', 'li', function (ev) {
-    console.log('mouseenter', this);
+    console.log('mouseenter', this, ev);
 });
 

@@ -168,7 +168,7 @@ exports.once = function (el, type, sel, listener, options) {
  * @param originType {String} 原始的事件类型
  * @param handle {Function} 处理方式
  */
-exports.special = function(displayType, originType, handle) {
+exports.special = function (displayType, originType, handle) {
     special(displayType, originType, handle);
 };
 
@@ -225,6 +225,16 @@ exports.create = function (type, properties, Constructor) {
 };
 
 /**
+ * 克隆事件
+ * @param ev {Event} 事件
+ * @param [type=ev.type] {String} 类型
+ * @returns {event}
+ */
+exports.clone = function (ev, type) {
+    return clone(ev, type);
+};
+
+/**
  * 事件发送
  * @param el
  * @param ev
@@ -270,6 +280,11 @@ function checkPassiveSuppted() {
  * @param options
  */
 function on(el, type, sel, listener, options) {
+    var specialEvent = specialEvents[type];
+    type = specialEvent ? specialEvent.o : type;
+    var handle = specialEvent ? specialEvent.h : function (ev, listener) {
+        listener.call(el, ev);
+    };
     var key = el[DOM_KEY] = el[DOM_KEY] || guid();
     eventStrore[key] = eventStrore[key] || {};
     var listenerMap = eventStrore[key][LISTENER_MAP] = eventStrore[key][LISTENER_MAP] || {};
@@ -282,7 +297,14 @@ function on(el, type, sel, listener, options) {
         options = passiveSuppted ? object.assign({}, defaultOptions, options) : Boolean(options.capture);
         eventStrore[key][OPTIONS_FLAG] = options;
         el.addEventListener(type, function (ev) {
-            delegate(el, wrapEvent(ev), sel, listenerList);
+            var closestEl = selector.closest(ev.target, sel)[0];
+
+            // 如果事件类型相同 && 最近节点存在 && 父子关系
+            if (closestEl && selector.contains(closestEl, el)) {
+                handle.call(closestEl, ev, function (ev) {
+                    delegate(this, wrapEvent(ev), listenerList);
+                });
+            }
         }, options);
     }
 }
@@ -385,36 +407,26 @@ function wrapEvent(ev) {
  * 代理
  * @param el
  * @param ev
- * @param sel
  * @param list
  */
-function delegate(el, ev, sel, list) {
-    var closestEl = selector.closest(ev.target, sel)[0];
-    var falsed = false;
+function delegate(el, ev, list) {
     var listCopied = [].concat(list);
 
-    // 如果事件类型相同 && 最近节点存在 && 父子关系
-    if (closestEl && selector.contains(closestEl, el)) {
-        array.each(listCopied, function (index, listener) {
-            if (listener.call(closestEl, ev) === false) {
-                if (!falsed) {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    ev.stopImmediatePropagation();
-                }
+    array.each(listCopied, function (index, listener) {
+        if (listener.call(el, ev) === false) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            ev.stopImmediatePropagation();
+        }
 
-                falsed = true;
-            }
+        if (listener[ONCED]) {
+            array.remove(list, index);
+        }
 
-            if (listener[ONCED]) {
-                array.remove(list, index);
-            }
-
-            if (ev[IMMEDIATE_PROPAGATION_STOPPED]) {
-                return false;
-            }
-        });
-    }
+        if (ev[IMMEDIATE_PROPAGATION_STOPPED]) {
+            return false;
+        }
+    });
 }
 
 /**
@@ -464,10 +476,38 @@ function create(type, properties, Constructor) {
     return ev;
 }
 
+/**
+ * 克隆一个事件
+ * @param ev
+ * @param [type]
+ * @returns {event}
+ */
+function clone(ev, type) {
+    var properties = {
+        originalEvent: ev
+    };
 
+    try {
+        for (var key in ev) {
+            properties[key] = ev[key];
+        }
+    } catch (err) {
+        // ignore
+    }
+
+    return create(type || ev.type, properties, ev.constructor);
+}
+
+
+/**
+ * 特殊处理事件
+ * @param displayType
+ * @param originType
+ * @param handle
+ */
 function special(displayType, originType, handle) {
     specialEvents[displayType] = {
-        d: displayType,
+        // d: displayType,
         o: originType,
         h: handle
     };
@@ -477,24 +517,15 @@ function special(displayType, originType, handle) {
 object.each({
     mouseenter: 'mouseover',
     mouseleave: 'mouseout'
-}, function (displayEventType, originEventType) {
-    special(displayEventType, originEventType, function (ev, listener) {
+}, function (displayType, originType) {
+    special(displayType, originType, function (ev, listener) {
         var target = this;
         var related = ev.relatedTarget;
 
         // For mouseenter/leave call the handler if related is outside the target.
         // NB: No relatedTarget if the mouse left/entered the browser window
-        if (!related || ( related !== target && !selector.contains(related, target) )) {
-            var ev2 = {};
-            for (var i in ev) {
-                try {
-                    ev2[i] = ev[i];
-                } catch (err) {
-                    // ignore
-                }
-            }
-            ev2.type = displayEventType;
-            return listener.call(target, ev2);
+        if (!related || (related !== target && !selector.contains(related, target))) {
+            listener.call(target, clone(ev, displayType));
         }
     });
 });
