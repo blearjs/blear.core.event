@@ -312,10 +312,8 @@ function on(el, type, sel, listener, options) {
             var immediatePropagationStopped = false;
             array.each([].concat(listenerList), function (index, listener) {
                 var meta = listener[LISTENER_META];
-                var contextEl = selector.closest(ev.target, meta.s)[0];
-
-                // 如果事件类型相同 && 最近节点存在 && 父子关系
-                if (contextEl && selector.contains(contextEl, el)) {
+                var contextEl = el;
+                var execHandle = function () {
                     handle.call(contextEl, ev, function (ev) {
                         ev = wrapEvent(ev);
 
@@ -334,6 +332,20 @@ function on(el, type, sel, listener, options) {
                             immediatePropagationStopped = true;
                         }
                     });
+                };
+
+                // 非代理
+                if (el === meta.s) {
+                    execHandle();
+                }
+                // 代理
+                else {
+                    contextEl = selector.closest(ev.target, meta.s)[0];
+
+                    // 如果事件类型相同 && 最近节点存在 && 父子关系
+                    if (contextEl && selector.contains(contextEl, el)) {
+                        execHandle();
+                    }
                 }
 
                 if (immediatePropagationStopped) {
@@ -343,6 +355,7 @@ function on(el, type, sel, listener, options) {
         }, options);
     }
 }
+
 
 /**
  * 【单次】事件监听

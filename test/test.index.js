@@ -905,4 +905,17 @@ describe('blear.core.event unit test', function () {
             done();
         }, 30);
     });
+
+    it('on window', function (done) {
+        var evList = [];
+        event.on(window, 'a', function (ev) {
+            evList.push(ev);
+        });
+        event.emit(window, 'a');
+        setTimeout(function () {
+            expect(evList.length).toBe(1);
+            expect(evList[0].type).toBe('a');
+            done();
+        }, 10);
+    });
 });
