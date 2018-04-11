@@ -39,7 +39,7 @@ var guid = random.guid;
 var BUBBLE_MODE_KEY = guid();
 var CAPTURE_MODE_KEY = guid();
 var LISTENER_MAP = guid();
-var OPTIONS_FLAG = guid();
+var LISTEN_GUID = guid();
 var IMMEDIATE_PROPAGATION_STOPPED = guid();
 var ONCED = guid();
 var eventStrore = {};
@@ -293,21 +293,58 @@ function on(el, type, sel, listener, options) {
     var key = el[keyName] = el[keyName] || guid();
     eventStrore[key] = eventStrore[key] || {};
     var listenerMap = eventStrore[key][LISTENER_MAP] = eventStrore[key][LISTENER_MAP] || {};
-    var optionsFlag = eventStrore[key][OPTIONS_FLAG] = eventStrore[key][OPTIONS_FLAG] || null;
+    var listenGuid = eventStrore[key][LISTEN_GUID] = eventStrore[key][LISTEN_GUID] || 0;
     var listenerList = listenerMap[type] = listenerMap[type] || [];
-    listenerMap[type].push(listener);
+    listenerList.push({
+        e: el,
+        t: type,
+        s: sel,
+        l: listener,
+        o: options
+    });
 
-    if (!optionsFlag) {
-        eventStrore[key][OPTIONS_FLAG] = options;
+    if (!listenGuid) {
+        eventStrore[key][LISTEN_GUID] = guid();
         el.addEventListener(type, function (ev) {
-            var closestEl = selector.closest(ev.target, sel)[0];
+            var immediatePropagationStopped = false;
+            array.each([].concat(listenerList), function (index, meta) {
+                var contextEl = selector.closest(ev.target, meta.s)[0];
 
-            // 如果事件类型相同 && 最近节点存在 && 父子关系
-            if (closestEl && selector.contains(closestEl, el)) {
-                handle.call(closestEl, ev, function (ev) {
-                    delegate(this, wrapEvent(ev), listenerList);
-                });
-            }
+                // 如果事件类型相同 && 最近节点存在 && 父子关系
+                if (contextEl && selector.contains(contextEl, el)) {
+                    var listener = meta.l;
+                    handle.call(contextEl, ev, function (ev) {
+                        ev = wrapEvent(ev);
+
+                        if (listener.call(this, ev) === false) {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            ev.stopImmediatePropagation();
+                        }
+
+                        if (listener[ONCED]) {
+                            array.remove(listenerList, index);
+                        }
+
+                        if (ev[IMMEDIATE_PROPAGATION_STOPPED]) {
+                            immediatePropagationStopped = true;
+                        }
+                    });
+                }
+
+                if (immediatePropagationStopped) {
+                    return false;
+                }
+            });
+
+            // var closestEl = selector.closest(ev.target, sel)[0];
+            //
+            // // 如果事件类型相同 && 最近节点存在 && 父子关系
+            // if (closestEl && selector.contains(closestEl, el)) {
+            //     handle.call(closestEl, ev, function (ev) {
+            //         delegate(this, wrapEvent(ev), listenerList);
+            //     });
+            // }
         }, options);
     }
 }
@@ -416,26 +453,22 @@ function wrapEvent(ev) {
  * 代理
  * @param el
  * @param ev
- * @param list
+ * @param listener
  */
-function delegate(el, ev, list) {
-    var listCopied = [].concat(list);
+function delegate(el, ev, listener) {
+    if (listener.call(el, ev) === false) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+    }
 
-    array.each(listCopied, function (index, listener) {
-        if (listener.call(el, ev) === false) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            ev.stopImmediatePropagation();
-        }
+    if (listener[ONCED]) {
+        array.remove(list, index);
+    }
 
-        if (listener[ONCED]) {
-            array.remove(list, index);
-        }
-
-        if (ev[IMMEDIATE_PROPAGATION_STOPPED]) {
-            return false;
-        }
-    });
+    if (ev[IMMEDIATE_PROPAGATION_STOPPED]) {
+        return false;
+    }
 }
 
 /**

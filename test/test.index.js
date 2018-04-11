@@ -856,4 +856,49 @@ describe('blear.core.event unit test', function () {
             done();
         }, 10);
     });
+
+    it('multiple delegate', function (done) {
+        var divEl = document.createElement('div');
+        var class0 = 'button-' + Date.now();
+        var class1 = 'button-' + Date.now();
+
+        divEl.innerHTML = '' +
+            '<ul>' +
+            /**/'<li>' +
+            /**//**/'<button class="' + class0 + '"></button>' +
+            /**/'</li>' +
+            '</ul>' +
+            '<p>' +
+            /**/'<button class="' + class1 + '"></button>' +
+            '</p>';
+        doc.body.appendChild(divEl);
+        var buttonEls = divEl.getElementsByTagName('button');
+        var button0El = buttonEls[0];
+        var button1El = buttonEls[1];
+        var targetList = [];
+        var time0 = 0;
+        var time1 = 0;
+
+        event.on(divEl, 'click', 'li button', function (ev) {
+            targetList.push(this);
+            time0 = parseInt(ev.timeStamp);
+        });
+        event.on(divEl, 'click', 'p button', function (ev) {
+            targetList.push(this);
+            time1 = parseInt(ev.timeStamp);
+        });
+
+        event.emit(button0El, 'click');
+        event.emit(button1El, 'click');
+
+        setTimeout(function () {
+            expect(targetList.length).toBe(2);
+            expect(targetList[0].className).toBe(class0);
+            expect(targetList[1].className).toBe(class1);
+            expect(time0).toBeGreaterThan(0);
+            expect(time1).toBeGreaterThan(0);
+            expect(time1).toBeGreaterThan(time0);
+            done();
+        }, 10);
+    });
 });
