@@ -336,15 +336,6 @@ function on(el, type, sel, listener, options) {
                     return false;
                 }
             });
-
-            // var closestEl = selector.closest(ev.target, sel)[0];
-            //
-            // // 如果事件类型相同 && 最近节点存在 && 父子关系
-            // if (closestEl && selector.contains(closestEl, el)) {
-            //     handle.call(closestEl, ev, function (ev) {
-            //         delegate(this, wrapEvent(ev), listenerList);
-            //     });
-            // }
         }, options);
     }
 }
@@ -447,28 +438,6 @@ function wrapEvent(ev) {
         return stopImmediatePropagation.call(ev);
     };
     return ev;
-}
-
-/**
- * 代理
- * @param el
- * @param ev
- * @param listener
- */
-function delegate(el, ev, listener) {
-    if (listener.call(el, ev) === false) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        ev.stopImmediatePropagation();
-    }
-
-    if (listener[ONCED]) {
-        array.remove(list, index);
-    }
-
-    if (ev[IMMEDIATE_PROPAGATION_STOPPED]) {
-        return false;
-    }
 }
 
 /**

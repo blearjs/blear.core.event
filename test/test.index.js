@@ -889,7 +889,10 @@ describe('blear.core.event unit test', function () {
         });
 
         event.emit(button0El, 'click');
-        event.emit(button1El, 'click');
+
+        setTimeout(function () {
+            event.emit(button1El, 'click');
+        }, 10);
 
         setTimeout(function () {
             expect(targetList.length).toBe(2);
@@ -898,7 +901,8 @@ describe('blear.core.event unit test', function () {
             expect(time0).toBeGreaterThan(0);
             expect(time1).toBeGreaterThan(0);
             expect(time1).toBeGreaterThan(time0);
+            document.body.removeChild(divEl);
             done();
-        }, 10);
+        }, 30);
     });
 });
