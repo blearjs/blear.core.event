@@ -41,7 +41,8 @@ var CAPTURE_MODE_KEY = guid();
 var LISTENER_MAP = guid();
 var LISTEN_GUID = guid();
 var IMMEDIATE_PROPAGATION_STOPPED = guid();
-var ONCED = guid();
+var LISTENER_ONCED = guid();
+var LISTENER_META = guid();
 var eventStrore = {};
 var passiveSuppted = checkPassiveSuppted();
 var defaultOptions = {
@@ -295,24 +296,26 @@ function on(el, type, sel, listener, options) {
     var listenerMap = eventStrore[key][LISTENER_MAP] = eventStrore[key][LISTENER_MAP] || {};
     var listenGuid = eventStrore[key][LISTEN_GUID] = eventStrore[key][LISTEN_GUID] || 0;
     var listenerList = listenerMap[type] = listenerMap[type] || [];
-    listenerList.push({
+
+    listener[LISTENER_META] = {
         e: el,
         t: type,
         s: sel,
         l: listener,
         o: options
-    });
+    };
+    listenerList.push(listener);
 
     if (!listenGuid) {
         eventStrore[key][LISTEN_GUID] = guid();
         el.addEventListener(type, function (ev) {
             var immediatePropagationStopped = false;
-            array.each([].concat(listenerList), function (index, meta) {
+            array.each([].concat(listenerList), function (index, listener) {
+                var meta = listener[LISTENER_META];
                 var contextEl = selector.closest(ev.target, meta.s)[0];
 
                 // 如果事件类型相同 && 最近节点存在 && 父子关系
                 if (contextEl && selector.contains(contextEl, el)) {
-                    var listener = meta.l;
                     handle.call(contextEl, ev, function (ev) {
                         ev = wrapEvent(ev);
 
@@ -322,7 +325,8 @@ function on(el, type, sel, listener, options) {
                             ev.stopImmediatePropagation();
                         }
 
-                        if (listener[ONCED]) {
+                        if (listener[LISTENER_ONCED]) {
+                            listener[LISTENER_ONCED] = null;
                             array.remove(listenerList, index);
                         }
 
@@ -349,7 +353,7 @@ function on(el, type, sel, listener, options) {
  * @param options
  */
 function once(el, type, sel, listener, options) {
-    listener[ONCED] = true;
+    listener[LISTENER_ONCED] = true;
     on(el, type, sel, listener, options);
 }
 
@@ -367,6 +371,17 @@ function eachMode(callback) {
 }
 
 /**
+ * 解除 listener 对其他的的引用
+ * @param list
+ */
+function unlinkListenersMeta(list) {
+    array.each(list, function (index, listener) {
+        listener[LISTENER_META] = null;
+        listener[LISTENER_ONCED] = null;
+    });
+}
+
+/**
  * 删除所有事件
  * @param el
  */
@@ -379,6 +394,7 @@ function unAllEvents(el) {
             eventStrore[key][LISTENER_MAP]
         ) {
             object.each(eventStrore[key][LISTENER_MAP], function (type, list) {
+                unlinkListenersMeta(list);
                 list.length = 0;
             });
         }
@@ -400,6 +416,7 @@ function unAllListeners(el, type) {
             eventStrore[key][LISTENER_MAP][type]
         ) {
             // 必须这么操作才是操作原始数组的引用
+            unlinkListenersMeta(eventStrore[key][LISTENER_MAP][type]);
             eventStrore[key][LISTENER_MAP][type].length = 0;
         }
     });
@@ -420,6 +437,7 @@ function unOneListener(el, type, listener) {
             eventStrore[key][LISTENER_MAP] &&
             eventStrore[key][LISTENER_MAP][type]
         ) {
+            unlinkListenersMeta([listener]);
             array.delete(eventStrore[key][LISTENER_MAP][type], listener);
         }
     });

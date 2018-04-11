@@ -34,6 +34,11 @@ var f4 = function () {
     console.log('f4');
 };
 
+window.f1 = f1;
+window.f2 = f2;
+window.f3 = f3;
+window.f4 = f4;
+
 event.on(document.getElementById('demo'), 'click', f1);
 event.on(document.getElementById('demo'), 'click', f2);
 event.once(document.getElementById('demo'), 'click', f3);
