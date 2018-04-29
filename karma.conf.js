@@ -69,12 +69,12 @@ module.exports = function (config) {
                 included: false
             },
             {
-                // 加载 src 下的原始文件，但不直接引入，使用模块加载器引入
-                pattern: './test/test.**',
+                // 加载 test 下的单元测试文件，但不直接引入，使用模块加载器引入
+                pattern: './test/**/test.*.js',
                 included: false
             },
             {
-                // 加载 test 下的入口文件，但不直接引入，使用模块加载器引入
+                // 加载 test 下的入口文件，直接引入
                 pattern: './test/main.js',
                 included: true
             }
@@ -90,7 +90,7 @@ module.exports = function (config) {
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
         preprocessors: {
             // 原始模块，需要测试覆盖率
-            './src/index.js': ['coverage']
+            './src/**/*.js': ['coverage']
         },
 
 
