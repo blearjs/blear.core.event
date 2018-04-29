@@ -10,10 +10,14 @@
 
 var event = require('../src/index');
 
-var retEl = document.getElementById('ret');
 var inputEl = document.getElementById('input');
 
 window.event = event;
+
+event.on(inputEl, 'change', function () {
+    console.log('event: change')
+});
+
 event.on(inputEl, 'input', function () {
-    retEl.innerText = inputEl.value;
+    console.log('event: input')
 });

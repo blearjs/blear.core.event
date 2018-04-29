@@ -38,8 +38,6 @@ var standardHandle = function (ev, callback) {
 var guid = random.guid;
 var BUBBLE_MODE_KEY = guid();
 var CAPTURE_MODE_KEY = guid();
-var LISTENER_MAP = guid();
-var LISTEN_GUID = guid();
 var IMMEDIATE_PROPAGATION_STOPPED = guid();
 var LISTENER_ONCED = guid();
 var LISTENER_META = guid();
@@ -189,10 +187,9 @@ exports.length = function (el, type) {
 
         if (key &&
             eventStrore[key] &&
-            eventStrore[key][LISTENER_MAP] &&
-            eventStrore[key][LISTENER_MAP][type]
+            eventStrore[key][type]
         ) {
-            len += eventStrore[key][LISTENER_MAP][type].length;
+            len += eventStrore[key][type].length;
         }
     });
 
@@ -293,21 +290,11 @@ function on(el, type, sel, listener, options) {
     var handle = specialEvent ? specialEvent.h : standardHandle;
     var key = el[keyName] = el[keyName] || guid();
     eventStrore[key] = eventStrore[key] || {};
-    var listenerMap = eventStrore[key][LISTENER_MAP] = eventStrore[key][LISTENER_MAP] || {};
-    var listenGuid = eventStrore[key][LISTEN_GUID] = eventStrore[key][LISTEN_GUID] || 0;
-    var listenerList = listenerMap[type] = listenerMap[type] || [];
+    var listenerMap = eventStrore[key] = eventStrore[key] || {};
+    var listenerList = listenerMap[type];
 
-    listener[LISTENER_META] = {
-        e: el,
-        t: type,
-        s: sel,
-        l: listener,
-        o: options
-    };
-    listenerList.push(listener);
-
-    if (!listenGuid) {
-        eventStrore[key][LISTEN_GUID] = guid();
+    if (!listenerList) {
+        listenerList = listenerMap[type]= [];
         el.addEventListener(type, function (ev) {
             var immediatePropagationStopped = false;
             array.each([].concat(listenerList), function (index, listener) {
@@ -354,6 +341,15 @@ function on(el, type, sel, listener, options) {
             });
         }, options);
     }
+
+    listener[LISTENER_META] = {
+        e: el,
+        t: type,
+        s: sel,
+        l: listener,
+        o: options
+    };
+    listenerList.push(listener);
 }
 
 
@@ -403,10 +399,9 @@ function unAllEvents(el) {
         var key = el[mode];
 
         if (key &&
-            eventStrore[key] &&
-            eventStrore[key][LISTENER_MAP]
+            eventStrore[key]
         ) {
-            object.each(eventStrore[key][LISTENER_MAP], function (type, list) {
+            object.each(eventStrore[key], function (type, list) {
                 unlinkListenersMeta(list);
                 list.length = 0;
             });
@@ -425,12 +420,11 @@ function unAllListeners(el, type) {
 
         if (key &&
             eventStrore[key] &&
-            eventStrore[key][LISTENER_MAP] &&
-            eventStrore[key][LISTENER_MAP][type]
+            eventStrore[key][type]
         ) {
             // 必须这么操作才是操作原始数组的引用
-            unlinkListenersMeta(eventStrore[key][LISTENER_MAP][type]);
-            eventStrore[key][LISTENER_MAP][type].length = 0;
+            unlinkListenersMeta(eventStrore[key][type]);
+            eventStrore[key][type].length = 0;
         }
     });
 }
@@ -447,11 +441,10 @@ function unOneListener(el, type, listener) {
 
         if (key &&
             eventStrore[key] &&
-            eventStrore[key][LISTENER_MAP] &&
-            eventStrore[key][LISTENER_MAP][type]
+            eventStrore[key][type]
         ) {
             unlinkListenersMeta([listener]);
-            array.delete(eventStrore[key][LISTENER_MAP][type], listener);
+            array.delete(eventStrore[key][type], listener);
         }
     });
 }
