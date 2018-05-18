@@ -30,7 +30,7 @@ var array = require('blear.utils.array');
 var random = require('blear.utils.random');
 var selector = require('blear.core.selector');
 
-
+var typeRE = /\s+/;
 var specialEvents = {};
 var standardHandle = function (ev, callback) {
     return callback.call(this, ev);
@@ -78,23 +78,30 @@ exports.on = function (el, type, sel, listener, options) {
 
     switch (args.length) {
         case 3:
+            eachTypes(type, function (type) {
             // .on(el, type, listener);
             on(el, type, el, args[2], false);
+            });
             break;
+
         case 4:
-            // .on(el, type, listener, options);
-            if (typeis.Function(args[2])) {
-                on(el, type, el, args[2], args[3]);
-            }
-            // .on(el, type, sel, listener);
-            else {
-                on(el, type, sel, args[3], false);
-            }
+            eachTypes(type, function (type) {
+                // .on(el, type, listener, options);
+                if (typeis.Function(args[2])) {
+                    on(el, type, el, args[2], args[3]);
+                }
+                // .on(el, type, sel, listener);
+                else {
+                    on(el, type, sel, args[3], false);
+                }
+            });
             break;
 
         case 5:
-            // .on(el, type, sel, listener, options);
-            on(el, type, sel, listener, options);
+            eachTypes(type, function (type) {
+                // .on(el, type, sel, listener, options);
+                on(el, type, sel, listener, options);
+            });
             break;
     }
 };
@@ -115,13 +122,17 @@ exports.un = function (el, type, listener) {
             break;
 
         case 2:
-            // .un(el, type);
-            unAllListeners(el, type);
+            eachTypes(type, function (type) {
+                // .un(el, type);
+                unAllListeners(el, type);
+            });
             break;
 
         case 3:
-            // .un(el, type, listener);
-            unOneListener(el, type, listener);
+            eachTypes(type, function (type) {
+                // .un(el, type, listener);
+                unOneListener(el, type, listener);
+            });
             break;
     }
 };
@@ -139,23 +150,30 @@ exports.once = function (el, type, sel, listener, options) {
 
     switch (args.length) {
         case 3:
-            // .once(el, type, listener);
-            once(el, type, el, args[2], false);
+            eachTypes(type, function (type) {
+                // .once(el, type, listener);
+                once(el, type, el, args[2], false);
+            });
             break;
+
         case 4:
-            // .once(el, type, listener, options);
-            if (typeis.Function(args[2])) {
-                once(el, type, el, args[2], args[3]);
-            }
-            // .once(el, type, sel, listener);
-            else {
-                once(el, type, sel, args[3], false);
-            }
+            eachTypes(type, function (type) {
+                // .once(el, type, listener, options);
+                if (typeis.Function(args[2])) {
+                    once(el, type, el, args[2], args[3]);
+                }
+                // .once(el, type, sel, listener);
+                else {
+                    once(el, type, sel, args[3], false);
+                }
+            });
             break;
 
         case 5:
-            // .once(el, type, sel, listener, options);
-            once(el, type, sel, listener, options);
+            eachTypes(type, function (type) {
+                // .once(el, type, sel, listener, options);
+                once(el, type, sel, listener, options);
+            });
             break;
     }
 };
@@ -274,6 +292,17 @@ function checkPassiveSuppted() {
 }
 
 /**
+ * 根据空格分隔 type
+ * @param type
+ * @param callback
+ */
+function eachTypes(type, callback) {
+    array.each(type.trim().split(typeRE), function (index, type) {
+        callback(type);
+    });
+}
+
+/**
  * 事件监听
  * @param el
  * @param type
@@ -294,7 +323,7 @@ function on(el, type, sel, listener, options) {
     var listenerList = listenerMap[type];
 
     if (!listenerList) {
-        listenerList = listenerMap[type]= [];
+        listenerList = listenerMap[type] = [];
         el.addEventListener(type, function (ev) {
             var immediatePropagationStopped = false;
             array.each([].concat(listenerList), function (index, listener) {

@@ -462,4 +462,22 @@ describe('.on', function () {
         }, 10);
     });
 
+    it('.on more types', function (done) {
+        var divEl = document.createElement('div');
+        doc.body.appendChild(divEl);
+        var fn = function() {
+            // ignore
+        };
+
+        event.on(divEl, 'a b c', fn);
+        event.on(divEl, 'a b d', fn);
+        event.on(divEl, ' a b d ', fn);
+
+        expect(event.length(divEl, 'a')).toEqual(3);
+        expect(event.length(divEl, 'b')).toEqual(3);
+        expect(event.length(divEl, 'c')).toEqual(1);
+        expect(event.length(divEl, 'd')).toEqual(2);
+        doc.body.removeChild(divEl);
+        done();
+    });
 });
