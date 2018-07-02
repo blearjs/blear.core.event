@@ -29,6 +29,7 @@ var object = require('blear.utils.object');
 var array = require('blear.utils.array');
 var random = require('blear.utils.random');
 var selector = require('blear.core.selector');
+require('./_event-constructor-polyfill');
 
 var typeRE = /\s+/;
 var specialEvents = {};
